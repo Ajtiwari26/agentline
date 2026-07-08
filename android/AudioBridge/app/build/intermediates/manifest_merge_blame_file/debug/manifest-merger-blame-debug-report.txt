@@ -1,0 +1,248 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.agentline.audiobridge"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="29"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+11-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:5:5-71
+11-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:5:22-68
+12    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+12-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:6:5-80
+12-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:6:22-77
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:7:5-77
+13-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:7:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+14-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:8:5-88
+14-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:8:22-85
+15    <uses-permission android:name="android.permission.INTERNET" />
+15-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:9:5-67
+15-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:9:22-64
+16
+17    <!-- Permissions for PhoneStateReceiver and call screening -->
+18    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+18-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:12:5-75
+18-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:12:22-72
+19    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+19-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:13:5-72
+19-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:13:22-69
+20
+21    <queries>
+21-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:15:5-17:15
+22        <package android:name="moe.shizuku.privileged.api" />
+22-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:16:9-62
+22-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:16:18-59
+23    </queries>
+24
+25    <permission
+25-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+26        android:name="com.agentline.audiobridge.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+26-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+27        android:protectionLevel="signature" />
+27-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+28
+29    <uses-permission android:name="com.agentline.audiobridge.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+29-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+29-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+30    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+30-->[dev.rikka.shizuku:provider:13.1.5] /Users/ajay/.gradle/caches/8.13/transforms/3a9634ee92322591df95afce323b969b/transformed/jetified-provider-13.1.5/AndroidManifest.xml:8:5-78
+30-->[dev.rikka.shizuku:provider:13.1.5] /Users/ajay/.gradle/caches/8.13/transforms/3a9634ee92322591df95afce323b969b/transformed/jetified-provider-13.1.5/AndroidManifest.xml:8:22-75
+31
+32    <application
+32-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:19:5-75:19
+33        android:allowBackup="true"
+33-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:20:9-35
+34        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+34-->[androidx.core:core:1.12.0] /Users/ajay/.gradle/caches/8.13/transforms/b633ac57b149f7061d43ac7049406620/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+35        android:debuggable="true"
+36        android:extractNativeLibs="false"
+37        android:label="AudioBridge"
+37-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:21:9-36
+38        android:supportsRtl="true"
+38-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:22:9-35
+39        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" >
+39-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:23:9-68
+40        <activity
+40-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:25:9-48:20
+41            android:name="com.agentline.audiobridge.MainActivity"
+41-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:26:13-41
+42            android:exported="true" >
+42-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:27:13-36
+43            <intent-filter>
+43-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:28:13-31:29
+44                <action android:name="android.intent.action.MAIN" />
+44-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:29:17-69
+44-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:29:25-66
+45
+46                <category android:name="android.intent.category.LAUNCHER" />
+46-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:30:17-77
+46-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:30:27-74
+47            </intent-filter>
+48            <!-- Dialer / Phone Role Intent Filters -->
+49            <intent-filter>
+49-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:33:13-36:29
+50                <action android:name="android.intent.action.DIAL" />
+50-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:34:17-69
+50-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:34:25-66
+51
+52                <category android:name="android.intent.category.DEFAULT" />
+52-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:17-76
+52-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:27-73
+53            </intent-filter>
+54            <intent-filter>
+54-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:37:13-41:29
+55                <action android:name="android.intent.action.DIAL" />
+55-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:34:17-69
+55-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:34:25-66
+56
+57                <category android:name="android.intent.category.DEFAULT" />
+57-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:17-76
+57-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:27-73
+58
+59                <data android:scheme="tel" />
+59-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:40:17-46
+59-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:40:23-43
+60            </intent-filter>
+61            <intent-filter>
+61-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:42:13-47:29
+62                <action android:name="android.intent.action.VIEW" />
+62-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:43:17-69
+62-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:43:25-66
+63
+64                <category android:name="android.intent.category.DEFAULT" />
+64-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:17-76
+64-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:35:27-73
+65                <category android:name="android.intent.category.BROWSABLE" />
+65-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:45:17-78
+65-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:45:27-75
+66
+67                <data android:scheme="tel" />
+67-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:40:17-46
+67-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:40:23-43
+68            </intent-filter>
+69        </activity>
+70
+71        <provider
+71-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:50:9-56:82
+72            android:name="rikka.shizuku.ShizukuProvider"
+72-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:51:13-57
+73            android:authorities="com.agentline.audiobridge.shizuku"
+73-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:52:13-68
+74            android:enabled="true"
+74-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:54:13-35
+75            android:exported="true"
+75-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:55:13-36
+76            android:multiprocess="false"
+76-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:53:13-41
+77            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+77-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:56:13-79
+78
+79        <service
+79-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:58:9-62:58
+80            android:name="com.agentline.audiobridge.AudioBridgeService"
+80-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:59:13-47
+81            android:enabled="true"
+81-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:60:13-35
+82            android:exported="false"
+82-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:61:13-37
+83            android:foregroundServiceType="microphone" />
+83-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:62:13-55
+84
+85        <!-- Broadcast Receiver for Phone State Interception -->
+86        <receiver
+86-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:67:9-74:20
+87            android:name="com.agentline.audiobridge.PhoneStateReceiver"
+87-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:68:13-47
+88            android:exported="true" >
+88-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:69:13-36
+89            <intent-filter>
+89-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:70:13-73:29
+90                <action android:name="android.intent.action.PHONE_STATE" />
+90-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:71:17-76
+90-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:71:25-73
+91                <action android:name="com.agentline.audiobridge.TEST_PHONE_STATE" />
+91-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:72:17-85
+91-->/Users/ajay/Desktop/Projects/agentline/android/AudioBridge/app/src/main/AndroidManifest.xml:72:25-82
+92            </intent-filter>
+93        </receiver>
+94
+95        <provider
+95-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+96            android:name="androidx.startup.InitializationProvider"
+96-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
+97            android:authorities="com.agentline.audiobridge.androidx-startup"
+97-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
+98            android:exported="false" >
+98-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
+99            <meta-data
+99-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+100                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+100-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+101                android:value="androidx.startup" />
+101-->[androidx.emoji2:emoji2:1.2.0] /Users/ajay/.gradle/caches/8.13/transforms/974523aa43b3e2ac3630a6dc8636d74e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+102            <meta-data
+102-->[androidx.lifecycle:lifecycle-process:2.6.1] /Users/ajay/.gradle/caches/8.13/transforms/13f23d2e4a7652dbe5184efa1318639b/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:29:13-31:52
+103                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+103-->[androidx.lifecycle:lifecycle-process:2.6.1] /Users/ajay/.gradle/caches/8.13/transforms/13f23d2e4a7652dbe5184efa1318639b/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:30:17-78
+104                android:value="androidx.startup" />
+104-->[androidx.lifecycle:lifecycle-process:2.6.1] /Users/ajay/.gradle/caches/8.13/transforms/13f23d2e4a7652dbe5184efa1318639b/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:31:17-49
+105            <meta-data
+105-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+106                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+106-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+107                android:value="androidx.startup" />
+107-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+108        </provider>
+109
+110        <meta-data
+110-->[dev.rikka.shizuku:provider:13.1.5] /Users/ajay/.gradle/caches/8.13/transforms/3a9634ee92322591df95afce323b969b/transformed/jetified-provider-13.1.5/AndroidManifest.xml:11:9-13:36
+111            android:name="moe.shizuku.client.V3_SUPPORT"
+111-->[dev.rikka.shizuku:provider:13.1.5] /Users/ajay/.gradle/caches/8.13/transforms/3a9634ee92322591df95afce323b969b/transformed/jetified-provider-13.1.5/AndroidManifest.xml:12:13-57
+112            android:value="true" />
+112-->[dev.rikka.shizuku:provider:13.1.5] /Users/ajay/.gradle/caches/8.13/transforms/3a9634ee92322591df95afce323b969b/transformed/jetified-provider-13.1.5/AndroidManifest.xml:13:13-33
+113
+114        <receiver
+114-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+115            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+116            android:directBootAware="false"
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+117            android:enabled="true"
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+118            android:exported="true"
+118-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+119            android:permission="android.permission.DUMP" >
+119-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+120            <intent-filter>
+120-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+121                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+122            </intent-filter>
+123            <intent-filter>
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+124                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+125            </intent-filter>
+126            <intent-filter>
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+127                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+128            </intent-filter>
+129            <intent-filter>
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+130                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ajay/.gradle/caches/8.13/transforms/9b37afd626f466672185de8e4ecc2e34/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+131            </intent-filter>
+132        </receiver>
+133    </application>
+134
+135</manifest>

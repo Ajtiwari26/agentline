@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AgentLine Executive Command Center</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Outfit:wght@500;600&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#d4af37",
+                      "on-surface": "#e5e2e1",
+                      "on-primary-fixed": "#241a00",
+                      "tertiary": "#ffbfba",
+                      "tertiary-fixed-dim": "#ffb3ad",
+                      "on-tertiary-container": "#900013",
+                      "on-secondary-container": "#004119",
+                      "inverse-surface": "#e5e2e1",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed": "#410004",
+                      "surface-variant": "#353534",
+                      "on-primary-fixed-variant": "#574500",
+                      "surface-container-high": "#2a2a2a",
+                      "error": "#ffb4ab",
+                      "outline": "#99907c",
+                      "on-primary": "#3c2f00",
+                      "secondary-container": "#00b954",
+                      "primary-fixed": "#ffe088",
+                      "surface-container-highest": "#353534",
+                      "background": "#131313",
+                      "surface-container-low": "#1c1b1b",
+                      "surface-tint": "#e9c349",
+                      "primary-fixed-dim": "#e9c349",
+                      "inverse-on-surface": "#313030",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#4ae176",
+                      "surface-container": "#201f1f",
+                      "on-secondary": "#003915",
+                      "surface-dim": "#131313",
+                      "on-surface-variant": "#d0c5af",
+                      "tertiary-container": "#ff968f",
+                      "tertiary-fixed": "#ffdad7",
+                      "secondary": "#4ae176",
+                      "on-secondary-fixed-variant": "#005321",
+                      "secondary-fixed": "#6bff8f",
+                      "primary": "#f2ca50",
+                      "on-secondary-fixed": "#002109",
+                      "surface": "#131313",
+                      "surface-container-lowest": "#0e0e0e",
+                      "on-primary-container": "#554300",
+                      "inverse-primary": "#735c00",
+                      "surface-bright": "#3a3939",
+                      "on-tertiary-fixed-variant": "#930013",
+                      "outline-variant": "#4d4635",
+                      "on-error": "#690005",
+                      "on-background": "#e5e2e1",
+                      "on-tertiary": "#68000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "container-max": "1440px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Outfit"],
+                      "headline-lg": ["Outfit"],
+                      "headline-lg-mobile": ["Outfit"],
+                      "body-md": ["Inter"],
+                      "data-mono-sm": ["JetBrains Mono"],
+                      "display-xl": ["Outfit"],
+                      "data-mono-lg": ["JetBrains Mono"],
+                      "label-caps": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "data-mono-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "400"}],
+                      "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "data-mono-lg": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+        }
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top-color: rgba(255, 255, 255, 0.3);
+            border-left-color: rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.02);
+        }
+        .glass-panel-elevated {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-top-color: rgba(255, 255, 255, 0.35);
+            border-left-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+        }
+        .table-row-hover:hover {
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(74, 225, 118, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(74, 225, 118, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 225, 118, 0); }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.3);
+        }
+    </style>
+</head>
+<body class="text-on-surface font-body-md antialiased min-h-screen flex selection:bg-primary/30">
+    <!-- SideNavBar -->
+    <nav class="hidden md:flex bg-surface-container-low/40 backdrop-blur-2xl text-primary font-label-caps text-label-caps h-screen w-64 border-r border-white/20 shadow-2xl fixed left-0 top-0 flex-col z-40 pt-20">
+        <div class="px-6 mb-8">
+            <h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">AgentLine</h1>
+            <p class="text-on-surface-variant font-data-mono-sm mt-1">V3.0 Operations</p>
+        </div>
+        <div class="flex-1 px-4 space-y-2">
+            <a class="flex items-center gap-3 px-4 py-3 rounded bg-white/15 text-primary border-r-4 border-primary hover:backdrop-brightness-125 transition-all duration-300" href="#">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard_customize</span>
+                <span>Command Center</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/5 hover:backdrop-brightness-125 transition-all duration-300" href="#">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">psychology</span>
+                <span>Lead Intelligence</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/5 hover:backdrop-brightness-125 transition-all duration-300" href="#">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sensors</span>
+                <span>Active Ops</span>
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:text-on-surface hover:bg-white/5 hover:backdrop-brightness-125 transition-all duration-300" href="#">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+                <span>System Health</span>
+            </a>
+        </div>
+        <div class="p-4 mt-auto">
+            <button class="w-full py-3 px-4 border border-error text-error font-label-caps rounded hover:bg-error/10 transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+                Emergency Killswitch
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Main Content Area -->
+    <main class="flex-1 ml-0 md:ml-64 p-6 md:p-10 min-h-screen">
+        <!-- Header Section -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+            <div>
+                <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary tracking-tight">AgentLine Command Center</h2>
+                <div class="mt-2 inline-flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5">
+                    <div class="w-2 h-2 rounded-full bg-secondary pulse-green"></div>
+                    <span class="font-data-mono-sm text-on-surface-variant">Phone Device Connected (10BF5P2AZF0010T)</span>
+                </div>
+            </div>
+            <!-- Segmented Glass Switch -->
+            <div class="flex p-1 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
+                <button class="px-4 py-2 rounded bg-white/15 text-primary border border-primary/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)] font-label-caps text-label-caps transition-all">
+                    Local Mode (USB HFP)
+                </button>
+                <button class="px-4 py-2 rounded text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps transition-all">
+                    Cloud Mode (Forwarding)
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Quick Stats Grid -->
+            <div class="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Stat Card 1 -->
+                <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Total Leads Processed</p>
+                    <div class="flex items-baseline gap-3">
+                        <h3 class="font-data-mono-lg text-4xl text-primary">148</h3>
+                        <span class="font-data-mono-sm text-secondary bg-secondary/10 px-2 py-1 rounded-full text-xs">+12% growth</span>
+                    </div>
+                </div>
+                <!-- Stat Card 2 -->
+                <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Call Success Rate</p>
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-headline-md text-4xl text-on-surface">94.2%</h3>
+                        <div class="w-16 h-8 opacity-70">
+                            <svg class="w-full h-full stroke-secondary fill-none stroke-[3] stroke-linecap-round stroke-linejoin-round" viewbox="0 0 100 30">
+                                <path d="M0,25 L20,20 L40,28 L60,10 L80,15 L100,5"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- Stat Card 3 -->
+                <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Scheduled Callbacks</p>
+                    <div class="flex flex-col">
+                        <h3 class="font-headline-md text-4xl text-on-surface">7</h3>
+                        <span class="font-data-mono-sm text-on-surface-variant text-xs">pending for tomorrow</span>
+                    </div>
+                </div>
+                <!-- Stat Card 4 -->
+                <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">Forwarding Status</p>
+                    <div class="flex items-center gap-4 mt-2">
+                        <div class="px-3 py-1 bg-secondary/20 text-secondary border border-secondary/30 rounded-full font-data-mono-sm text-xs">
+                            ACTIVE
+                        </div>
+                        <div class="flex items-center gap-1 text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[20px] text-primary">signal_cellular_alt</span>
+                            <span class="font-data-mono-sm text-xs">Jio/Airtel 5G</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-Time Operations Panel -->
+            <div class="col-span-12 glass-panel-elevated rounded-xl flex flex-col lg:flex-row mb-6 overflow-hidden min-h-[400px]">
+                <!-- Left: Active Call -->
+                <div class="lg:w-1/4 p-6 border-b lg:border-b-0 lg:border-r border-white/10 bg-black/40 flex flex-col">
+                    <h4 class="font-label-caps text-label-caps text-primary tracking-widest mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">phone_in_talk</span>
+                        Current Active Call
+                    </h4>
+                    <div class="flex-1 flex flex-col justify-center">
+                        <div class="text-center mb-6">
+                            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 border border-white/10 mb-4 relative">
+                                <span class="material-symbols-outlined text-[40px] text-on-surface-variant">person</span>
+                                <div class="absolute top-0 right-0 w-4 h-4 bg-secondary rounded-full border-2 border-black pulse-green"></div>
+                            </div>
+                            <h5 class="font-headline-md text-xl text-on-surface truncate px-2">+91 93992 50600</h5>
+                            <p class="text-on-surface-variant font-body-md mt-1">Ajay Devgan</p>
+                        </div>
+                        <div class="flex justify-between items-center bg-white/5 p-4 rounded-lg border border-white/10 mt-auto">
+                            <div class="flex flex-col">
+                                <span class="font-label-caps text-[10px] text-on-surface-variant">DURATION</span>
+                                <span class="font-data-mono-lg text-primary">02:14</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="font-label-caps text-[10px] text-on-surface-variant">STATUS</span>
+                                <span class="font-data-mono-sm text-secondary">OFF-HOOK</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center: Live Transcript -->
+                <div class="lg:w-2/4 p-6 flex flex-col relative">
+                    <h4 class="font-label-caps text-label-caps text-primary tracking-widest mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">terminal</span>
+                        Live Transcript Console
+                    </h4>
+                    <div class="flex-1 bg-black/60 rounded-lg p-4 border border-white/10 font-data-mono-sm overflow-y-auto space-y-4 shadow-inner min-h-[250px]">
+                        <div class="flex gap-3 text-on-surface">
+                            <span class="text-primary/70 shrink-0">[10:32:01]</span>
+                            <span class="text-secondary shrink-0 font-bold">Agent:</span>
+                            <p>"Hey! Ajay talking here from CourseWallah. Kaise ho yaar?"</p>
+                        </div>
+                        <div class="flex gap-3 text-on-surface-variant">
+                            <span class="text-primary/70 shrink-0">[10:32:05]</span>
+                            <span class="text-tertiary shrink-0 font-bold">Student:</span>
+                            <p>"Arey bhaiya, main badhiya. Mujhe local AI course ke baare mein puchna tha."</p>
+                        </div>
+                        <div class="flex gap-3 text-on-surface">
+                            <span class="text-primary/70 shrink-0">[10:32:10]</span>
+                            <span class="text-secondary shrink-0 font-bold">Agent:</span>
+                            <p>"Sahi hai! Aajkal local models ka hi zamana hai. Kya aapne kabhi local run kiya hai?"</p>
+                        </div>
+                        <div class="w-2 h-4 bg-primary/50 animate-pulse mt-2 ml-14"></div>
+                    </div>
+                </div>
+                
+                <!-- Right: Lead Queue -->
+                <div class="lg:w-1/4 p-6 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/40 flex flex-col">
+                    <h4 class="font-label-caps text-label-caps text-primary tracking-widest mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">queue_play_next</span>
+                        Lead Queue
+                    </h4>
+                    <div class="space-y-3 flex-1">
+                        <div class="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center justify-between">
+                            <div>
+                                <p class="font-data-mono-sm text-on-surface">+91 98765 43210</p>
+                                <p class="text-xs text-on-surface-variant">Rahul</p>
+                            </div>
+                            <span class="text-xs font-label-caps text-primary/70">Next</span>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 p-3 rounded-lg flex items-center justify-between opacity-50">
+                            <div>
+                                <p class="font-data-mono-sm text-on-surface">+91 99999 88888</p>
+                                <p class="text-xs text-on-surface-variant">Priya</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex flex-col gap-3">
+                        <button class="w-full py-2 px-4 border border-primary/50 text-primary font-label-caps rounded hover:bg-primary/10 transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">pause</span>
+                            Pause Campaign
+                        </button>
+                        <button class="w-full py-2 px-4 border border-white/20 text-on-surface font-label-caps rounded hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">skip_next</span>
+                            Skip Lead
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads Log Table -->
+            <div class="col-span-12 lg:col-span-8 glass-panel rounded-xl overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                    <h4 class="font-headline-md text-xl text-on-surface">Leads Log</h4>
+                    <button class="text-primary text-sm hover:underline flex items-center gap-1 font-label-caps">
+                        View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/20 bg-white/5">
+                                <th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Phone Number</th>
+                                <th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Name</th>
+                                <th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Interest</th>
+                                <th class="p-4 font-label-caps text-label-caps text-on-surface-variant hidden md:table-cell">Summary</th>
+                                <th class="p-4 font-label-caps text-label-caps text-on-surface-variant text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-data-mono-sm">
+                            <tr class="border-b border-white/10 table-row-hover transition-colors">
+                                <td class="p-4 text-on-surface">+91 98111 22222</td>
+                                <td class="p-4 text-on-surface-variant font-body-md">Amit Singh</td>
+                                <td class="p-4">
+                                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full border border-primary/30 text-primary text-xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        HOT
+                                    </span>
+                                </td>
+                                <td class="p-4 text-on-surface-variant truncate max-w-[200px] hidden md:table-cell">Ready to purchase premium tier.</td>
+                                <td class="p-4 text-right space-x-2">
+                                    <button class="px-3 py-1 border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors text-xs">View</button>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-white/10 table-row-hover transition-colors">
+                                <td class="p-4 text-on-surface">+91 77777 55555</td>
+                                <td class="p-4 text-on-surface-variant font-body-md">Neha Sharma</td>
+                                <td class="p-4">
+                                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full border border-white/30 text-on-surface-variant text-xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                        WARM
+                                    </span>
+                                </td>
+                                <td class="p-4 text-on-surface-variant truncate max-w-[200px] hidden md:table-cell">Needs callback next week.</td>
+                                <td class="p-4 text-right space-x-2">
+                                    <button class="px-3 py-1 border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors text-xs">Redial</button>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-white/10 table-row-hover transition-colors">
+                                <td class="p-4 text-on-surface">+91 88888 44444</td>
+                                <td class="p-4 text-on-surface-variant font-body-md">Vikram Desai</td>
+                                <td class="p-4">
+                                    <span class="inline-flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full border border-blue-400/30 text-blue-300 text-xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                        COLD
+                                    </span>
+                                </td>
+                                <td class="p-4 text-on-surface-variant truncate max-w-[200px] hidden md:table-cell">Not interested at the moment.</td>
+                                <td class="p-4 text-right space-x-2">
+                                    <button class="px-3 py-1 border border-white/20 text-on-surface-variant rounded hover:bg-white/10 transition-colors text-xs">Archive</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Callback Scheduler -->
+            <div class="col-span-12 lg:col-span-4 glass-panel rounded-xl p-6 flex flex-col">
+                <h4 class="font-headline-md text-xl text-on-surface mb-4">Callback Scheduler</h4>
+                <!-- Search -->
+                <div class="relative mb-6">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+                    <input class="w-full bg-black/40 border border-white/15 rounded-lg pl-10 pr-4 py-2 text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all font-body-md" placeholder="Search scheduled calls..." type="text"/>
+                </div>
+                <!-- Upcoming List -->
+                <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 hover:border-primary/30 transition-colors group">
+                        <div class="flex justify-between items-start mb-2">
+                            <h6 class="font-body-md font-semibold text-on-surface">Karan Patel</h6>
+                            <span class="font-data-mono-sm text-secondary bg-secondary/10 px-2 py-0.5 rounded text-[10px]">In 15 mins</span>
+                        </div>
+                        <p class="font-data-mono-sm text-on-surface-variant mb-3">+91 91234 56789</p>
+                        <button class="w-full py-1.5 border border-primary/40 text-primary font-label-caps text-xs rounded hover:bg-primary/10 transition-colors">Initiate Call</button>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 hover:border-primary/30 transition-colors group">
+                        <div class="flex justify-between items-start mb-2">
+                            <h6 class="font-body-md font-semibold text-on-surface">Sunita Rao</h6>
+                            <span class="font-data-mono-sm text-on-surface-variant bg-white/10 px-2 py-0.5 rounded text-[10px]">Tomorrow 10 AM</span>
+                        </div>
+                        <p class="font-data-mono-sm text-on-surface-variant mb-3">+91 99887 77665</p>
+                        <button class="w-full py-1.5 border border-white/20 text-on-surface-variant font-label-caps text-xs rounded hover:bg-white/10 transition-colors">Reschedule</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+pymongo
+google-genai
+sarvamai
+fastapi
+uvicorn
+python-dotenv
+sounddevice
+numpy
+requests
+pydantic
+websockets
+# pydbus (needed for Bluetooth D-Bus interactions on Linux, optional on macOS)
