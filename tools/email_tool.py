@@ -28,7 +28,7 @@ You can view our course catalog and syllabus details directly on our website:
 👉 Course Catalog: https://www.coursewallah.com/courses
 
 Or download our official mobile app to access all free content, previews, and live classes:
-🤖 Google Play Store: https://play.google.com/store/apps/details?id=com.coursewallah.app
+🤖 Google Play Store: https://play.google.com/store/apps/details?id=co.barney.npsvn
 🍏 Apple iOS App Store: Search for 'MyInstitute' app and enter Org Code: vcunre
 
 Let us know if you have any questions!
@@ -53,7 +53,7 @@ You can enroll directly through our student portal or courses page:
 👉 Student Login Portal: https://students.coursewallah.com/login?orgCode=vcunre
 
 If you prefer to study on mobile, you can download our app:
-🤖 Google Play Store: https://play.google.com/store/apps/details?id=com.coursewallah.app
+🤖 Google Play Store: https://play.google.com/store/apps/details?id=co.barney.npsvn
 🍏 Apple iOS App Store: Search for 'MyInstitute' app and enter Org Code: vcunre
 
 Our manager will be in touch with you shortly to answer any payment or batch-timing questions.
