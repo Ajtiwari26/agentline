@@ -39,7 +39,10 @@ async def main():
         """Send generated agent speech audio to the phone via Bluetooth."""
         out_stream.write(pcm_bytes)
 
-    target_phone = "9343279335"
+    target_phone = "9399250600"
+    if len(sys.argv) > 1:
+        target_phone = sys.argv[1].strip()
+        
     print(f"\n[1/3] Triggering call to {target_phone} via USB ADB...")
     trigger_dial(target_phone)
 

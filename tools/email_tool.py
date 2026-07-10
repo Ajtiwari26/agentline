@@ -62,6 +62,27 @@ Best regards,
 Ajay
 Mentor, CourseWallah
 """
+    },
+    "portfolio": {
+        "subject": "Nukkad Tech Solutions - AI & Tech Automation Portfolio",
+        "body": """Hello,
+
+Thanks for speaking with our AI voice assistant today! As discussed, here is the portfolio of Nukkad Tech Solutions:
+
+Nukkad Tech Solutions provides complete end-to-end AI integration, custom software, app, and web development to help businesses minimize workload and automate operations.
+
+Key Offerings & Projects:
+1. AgentLine (Voice AI): Autonomous outbound & inbound call agents (just like the one that called you!) to handle sales, inquiries, and customer support.
+2. AI WhatsApp CRM: 24/7 automated chat handlers that resolve inquiries, book meetings, and update databases even at 2 AM or 4 AM.
+3. Social Media Automation: Automatically edit, optimize, and schedule YouTube Shorts & Instagram reels.
+4. Custom Development: Web/app development and workflow automation tailored to your business needs without the overhead of hiring and training in-house teams.
+
+If you are interested, we would love to schedule a live demo call with our founder, Ajay Tiwari.
+
+Best regards,
+Ajay Tiwari
+Founder, Nukkad Tech Solutions
+"""
     }
 }
 
@@ -101,8 +122,13 @@ def send_email_via_resend(to_email: str, subject: str, body: str) -> bool:
         "Authorization": f"Bearer {config.RESEND_API_KEY}",
         "Content-Type": "application/json"
     }
+    
+    # Customize sender name based on AGENT_MODE
+    mode = getattr(config, "AGENT_MODE", "portfolio")
+    sender_name = "Nukkad Tech Solutions" if mode == "portfolio" else "CourseWallah"
+    
     payload = {
-        "from": config.EMAIL_FROM or "CourseWallah <onboarding@resend.dev>",
+        "from": config.EMAIL_FROM or f"{sender_name} <onboarding@resend.dev>",
         "to": [to_email],
         "subject": subject,
         "text": body
@@ -126,13 +152,20 @@ def send_template_email(phone: str, to_email: str, template_name: str = "syllabu
     Called by the AI Agent as a tool.
     """
     # Guard: Reject placeholder, empty, or obviously invalid email addresses immediately
-    # to prevent SMTP connection attempts and retry loops from Gemini
     invalid_emails = ["lead@example.com", "example@example.com", "user@example.com", "test@example.com", ""]
     if not to_email or to_email.strip().lower() in invalid_emails or "@" not in to_email or "example" in to_email.lower():
         logger.warning(f"Email tool called with invalid/placeholder email: '{to_email}'. Returning early.")
         return "ERROR: No valid email address was provided. You must ask the user for their real email address during the call before sending an email. Do NOT retry this tool until you have a real email."
     
-    template = TEMPLATES.get(template_name, TEMPLATES["syllabus"])
+    # Determine the default template and override based on active mode
+    mode = getattr(config, "AGENT_MODE", "portfolio")
+    default_template = "portfolio" if mode == "portfolio" else "syllabus"
+    
+    # If standard greeting/agent requested 'syllabus' in portfolio mode, send portfolio
+    if mode == "portfolio" and template_name == "syllabus":
+        template_name = "portfolio"
+        
+    template = TEMPLATES.get(template_name, TEMPLATES[default_template])
     subject = template["subject"]
     body = template["body"]
     

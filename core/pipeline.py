@@ -10,6 +10,7 @@ from google.genai import types
 
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import config
 from core.prompts import build_system_prompt, load_kb
 from tools.email_tool import send_template_email
 from tools.callback_tool import schedule_manager_callback
@@ -199,7 +200,7 @@ class VoicePipeline:
             response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Charon")
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=getattr(config, "GEMINI_LIVE_VOICE", "Charon"))
                 )
             ),
             system_instruction=types.Content(

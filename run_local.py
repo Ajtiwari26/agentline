@@ -92,7 +92,8 @@ async def main():
             pass
             
     elif choice == "2":
-        csv_path = input("Enter path to leads CSV file (default: leads.csv): ").strip() or "leads.csv"
+        default_csv = "leads_bhopal.csv" if getattr(config, "AGENT_MODE", "portfolio") == "portfolio" else "leads.csv"
+        csv_path = input(f"Enter path to leads CSV file (default: {default_csv}): ").strip() or default_csv
         if not os.path.exists(csv_path):
             # Create a sample leads.csv if missing
             print(f"Creating sample file '{csv_path}'...")

@@ -10,8 +10,10 @@ logger = logging.getLogger(__name__)
 # Simple cache for welcome messages or common phrases
 _audio_cache = {}
 
-def get_sarvam_tts_sync(text: str, language_code: str = "hi-IN", speaker: str = "shubh", sample_rate: int = 8000) -> bytes:
+def get_sarvam_tts_sync(text: str, language_code: str = "hi-IN", speaker: str = None, sample_rate: int = 8000) -> bytes:
     """Synchronous request to Sarvam Text-to-Speech API. Returns raw PCM bytes."""
+    if speaker is None:
+        speaker = getattr(config, "SARVAM_SPEAKER", "shubh")
     url = "https://api.sarvam.ai/text-to-speech"
     payload = {
         "text": text,
@@ -39,8 +41,10 @@ def get_sarvam_tts_sync(text: str, language_code: str = "hi-IN", speaker: str = 
         logger.error(f"Error calling Sarvam TTS: {e}")
         return b""
 
-async def get_sarvam_tts(text: str, language_code: str = "hi-IN", speaker: str = "shubh", sample_rate: int = 8000) -> bytes:
+async def get_sarvam_tts(text: str, language_code: str = "hi-IN", speaker: str = None, sample_rate: int = 8000) -> bytes:
     """Asynchronous wrapper for Sarvam Text-to-Speech API."""
+    if speaker is None:
+        speaker = getattr(config, "SARVAM_SPEAKER", "shubh")
     cache_key = f"{text}_{language_code}_{speaker}_{sample_rate}"
     if cache_key in _audio_cache:
         return _audio_cache[cache_key]

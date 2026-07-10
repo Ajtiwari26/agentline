@@ -6,9 +6,12 @@ load_dotenv()
 
 # LLM Config
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+AGENT_MODE = os.getenv("AGENT_MODE", "portfolio")
+GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Charon")
 
 # Sarvam AI Config
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+SARVAM_SPEAKER = os.getenv("SARVAM_SPEAKER", "shubh")
 
 # Database Config
 MONGO_URI = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
