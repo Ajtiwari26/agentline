@@ -267,8 +267,9 @@ class VoicePipeline:
                     self.gate_open = False
                     
         # Discard quiet chunks to prevent minor background noises from triggering Gemini VAD interruptions
-        if not self.gate_open:
-            return
+        # Temporarily bypassed to resolve greeting response latency
+        # if not self.gate_open:
+        #     return
             
         try:
             # Resample 8kHz → 16kHz for Gemini Live input
