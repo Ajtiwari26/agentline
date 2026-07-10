@@ -1,0 +1,12 @@
+[Unit]
+Description=AgentLine FastAPI Voicebot Server
+After=network.target
+
+[Service]
+User=ajay
+WorkingDirectory=/home/ajay/agentline
+ExecStart=/home/ajay/agentline/.venv/bin/uvicorn cloud.server:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

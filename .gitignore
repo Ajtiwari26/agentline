@@ -1,0 +1,27 @@
+# Environment and secrets
+.env
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python caches and compiles
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+.logs/
+*.log
+
+# Code review graph
+.code-review-graph/
+
+# Large binaries (APKs, etc.)
+*.apk
+
+# System files
+.DS_Store
+Thumbls.db

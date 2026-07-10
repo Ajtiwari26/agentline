@@ -35,10 +35,14 @@ async def voicebot_endpoint(request: Request):
     Exotel Voicebot Applet makes HTTP request here.
     We return the wss:// URL of our websocket endpoint.
     """
+    params = request.query_params
+    call_from = params.get("CallFrom") or params.get("From") or "+919999999999"
+    direction = "outbound"  # Force outbound to play the welcome greeting immediately
+    
     host = request.headers.get("host")
     # Resolve scheme (wss for https, ws for http)
     scheme = "wss" if request.url.scheme == "https" else "ws"
-    websocket_url = f"{scheme}://{host}/ws/exotel"
+    websocket_url = f"{scheme}://{host}/ws/exotel?phone={call_from}&direction={direction}"
     logger.info(f"Received call routing query from Exotel. Directing to: {websocket_url}")
     return {"url": websocket_url}
 

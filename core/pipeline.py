@@ -1,196 +1,367 @@
 import os
 import asyncio
 import logging
-import base64
+import struct
 import array
 from typing import Callable, Coroutine, Dict, Any, List
 
+from google import genai
+from google.genai import types
+
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.stt import SarvamSTTClient
-from core.tts import get_sarvam_tts, pre_cache_welcome_message
-from core.agent import GeminiAgent
-from core.prompts import load_kb
+from core.prompts import build_system_prompt, load_kb
+from tools.email_tool import send_template_email
+from tools.callback_tool import schedule_manager_callback
+from tools.lead_tool import update_lead_status
+from tools.product_tool import get_product_details
+
+from contextlib import AsyncExitStack
 
 logger = logging.getLogger(__name__)
+
+# Tool execution map — the Live API sends function_call messages that we must handle manually
+TOOL_HANDLERS = {
+    "send_email": lambda args: send_template_email(
+        phone=args.get("_phone", "unknown"),
+        to_email=args.get("to_email", ""),
+        template_name=args.get("template_name", "syllabus")
+    ),
+    "schedule_callback": lambda args: schedule_manager_callback(
+        phone=args.get("_phone", "unknown"),
+        time_str=args.get("time_str", ""),
+        reason=args.get("reason", "")
+    ),
+    "log_lead_interest": lambda args: update_lead_status(
+        phone=args.get("_phone", "unknown"),
+        interest_level=args.get("interest_level", "warm"),
+        notes=args.get("notes", ""),
+        name=args.get("name", "")
+    ),
+    "query_product_info": lambda args: get_product_details(
+        query=args.get("query", "")
+    ),
+}
+
+# Tool declarations for Gemini Live API config
+TOOL_DECLARATIONS = [
+    types.FunctionDeclaration(
+        name="send_email",
+        description="Sends a template-based email to the user (e.g. syllabus, pricing, course brochures).",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "to_email": types.Schema(type="STRING", description="The recipient email address."),
+                "template_name": types.Schema(type="STRING", description="The name of the template ('syllabus' or 'pricing'). Defaults to 'syllabus'."),
+            },
+            required=["to_email"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="schedule_callback",
+        description="Schedules a callback for the human manager to call the lead back later. Use this if the lead asks for a call tomorrow, or next morning, or has query about pricing/payment.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "time_str": types.Schema(type="STRING", description="The requested callback time ('morning', 'afternoon', 'tomorrow', or specific hour like '11:00 AM')."),
+                "reason": types.Schema(type="STRING", description="The reason for scheduling the callback (e.g. 'payment discussion', 'detailed syllabus review')."),
+            },
+            required=["time_str", "reason"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="log_lead_interest",
+        description="Updates the lead's status (hot, warm, cold) and records conversation notes or objections in the database. Call this whenever you understand the user's name, interest level, or specific requirements.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "interest_level": types.Schema(type="STRING", description="The user's interest level ('hot', 'warm', 'cold')."),
+                "notes": types.Schema(type="STRING", description="Concise summary of what they want, study, work, or their objection."),
+                "name": types.Schema(type="STRING", description="The user's name if they shared it. Optional."),
+            },
+            required=["interest_level", "notes"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="query_product_info",
+        description="Queries the course catalog, pricing details, GPU requirements, or FAQ for relevant answers. Use this to get accurate details before answering fees or hardware questions.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "query": types.Schema(type="STRING", description="What the customer is asking (e.g., 'fees', 'graphics card requirements', 'beginner difficulty')."),
+            },
+            required=["query"],
+        ),
+    ),
+]
+
+
+def resample_8k_to_16k(pcm_8k: bytes) -> bytes:
+    """Upsample 8kHz 16-bit PCM to 16kHz by linear interpolation."""
+    samples = array.array('h', pcm_8k)
+    out = array.array('h')
+    for i in range(len(samples)):
+        out.append(samples[i])
+        # Interpolate between current and next sample
+        if i + 1 < len(samples):
+            mid = (samples[i] + samples[i + 1]) // 2
+            out.append(mid)
+        else:
+            out.append(samples[i])
+    return out.tobytes()
+
+
+def resample_24k_to_8k(pcm_24k: bytes) -> bytes:
+    """Downsample 24kHz 16-bit PCM to 8kHz by taking every 3rd sample."""
+    samples = array.array('h', pcm_24k)
+    out = array.array('h')
+    for i in range(0, len(samples), 3):
+        out.append(samples[i])
+    return out.tobytes()
+
 
 class VoicePipeline:
     def __init__(self, phone: str, direction: str = "outbound", send_audio_callback: Callable[[bytes], Coroutine[Any, Any, None]] = None):
         """
-        Voice Pipeline Orchestrator with full-duplex barge-in & direction handling.
+        Voice Pipeline using Gemini Live API for real-time audio-to-audio conversation.
         
         Args:
             phone: The phone number of the lead.
-            direction: "inbound" (lead called us) or "outbound" (we called lead).
+            direction: "inbound" or "outbound".
             send_audio_callback: Async callback that accepts 8kHz 16-bit PCM bytes to play or transmit.
         """
         self.phone = phone
         self.direction = direction
         self.send_audio_callback = send_audio_callback
         
-        # Initialize Gemini Agent
-        self.agent = GeminiAgent(phone)
+        # Build system prompt from knowledge base
+        self.system_prompt = build_system_prompt()
         
-        # Initialize STT Client
-        self.stt_client = SarvamSTTClient(callback=self.on_transcript_received)
+        # Initialize the Gemini client (Vertex AI with service account)
+        sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+        if sa_key_path and os.path.exists(sa_key_path):
+            logger.info(f"Initializing Gemini Live client with Vertex AI using Service Account: {sa_key_path}")
+            from google.oauth2 import service_account
+            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+            credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
+            self.client = genai.Client(
+                vertexai=True,
+                project=os.getenv("GCP_PROJECT", "igsl-67e70"),
+                location="us-central1",
+                credentials=credentials
+            )
+        else:
+            import config
+            logger.info("Initializing Gemini Live client with AI Studio API Key")
+            self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         
-        self.audio_queue = asyncio.Queue()
-        self.is_speaking = False
-        self.interrupted = False
-        self.welcome_message_sent = False
-        
-        # VAD threshold: RMS amplitude for active speech (8kHz 16-bit PCM)
-        self.rms_threshold = 800.0
-        
-        self.process_queue_task = None
+        self.exit_stack = AsyncExitStack()
+        self.session = None  # Gemini Live session handle
+        self.receiver_task = None
         self.active = True
+        self.welcome_sent = False
+        self.transcript_log = []  # For MongoDB logging
 
     async def start(self):
-        """Starts the STT connection and background processes."""
-        logger.info(f"Starting Voice Pipeline for {self.phone} (Direction: {self.direction})...")
+        """Connects to Gemini Live API and starts audio streaming."""
+        logger.info(f"Starting Gemini Live Voice Pipeline for {self.phone} (Direction: {self.direction})...")
         
-        # Connect STT WebSocket
-        connected = await self.stt_client.connect()
-        if not connected:
-            logger.error("STT Client failed to connect. Voice pipeline might not transcribe.")
-            
-        # Start queue processor
-        self.process_queue_task = asyncio.create_task(self._process_audio_queue())
-        
-        # Inbound vs Outbound welcome trigger logic
+        # Load welcome text for outbound calls
+        welcome_text = None
         if self.direction == "outbound":
             kb = load_kb()
             welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
-            asyncio.create_task(self.trigger_welcome_message(welcome_text))
-        else:
-            logger.info("Inbound call: Sitting silently waiting for caller's first speech greeting...")
+        
+        # Configure the Gemini Live session
+        live_config = types.LiveConnectConfig(
+            response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Charon")
+                )
+            ),
+            system_instruction=types.Content(
+                parts=[types.Part.from_text(text=self.system_prompt)]
+            ),
+            tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
+        )
+        
+        try:
+            # Connect to the Gemini Live WebSocket using ExitStack
+            self.session = await self.exit_stack.enter_async_context(
+                self.client.aio.live.connect(
+                    model="gemini-live-2.5-flash-native-audio",
+                    config=live_config
+                )
+            )
+            logger.info("Gemini Live session connected successfully!")
+            
+            # Start the background receiver task (listens for audio output and tool calls from Gemini)
+            self.receiver_task = asyncio.create_task(self._receive_loop())
+            
+            # For outbound calls, send the welcome message as text to trigger Gemini to speak
+            if welcome_text and self.direction == "outbound":
+                logger.info(f"Sending welcome prompt to Gemini Live: '{welcome_text}'")
+                await self.session.send(
+                    input=types.LiveClientContent(
+                        turns=[types.Content(
+                            role="user",
+                            parts=[types.Part.from_text(
+                                text=f"You just called this person. Start the conversation by saying exactly this greeting (adapt naturally but keep the essence): {welcome_text}"
+                            )]
+                        )],
+                        turn_complete=True
+                    )
+                )
+                self.welcome_sent = True
+                
+        except Exception as e:
+            logger.error(f"Failed to connect to Gemini Live API: {e}")
+            self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz mono PCM bytes, checks for barge-in VAD, and queues it for STT."""
-        if not self.active:
+        """Receives 8kHz PCM from Exotel, resamples to 16kHz, and sends to Gemini Live."""
+        if not self.active or not self.session:
             return
             
-        # Compute RMS to check for voice activity (barge-in)
-        samples = array.array('h', pcm_8k_bytes)
-        rms = 0.0
-        if samples:
-            sum_squares = sum(s * s for s in samples)
-            rms = (sum_squares / len(samples)) ** 0.5
-
-        # If agent is speaking and we detect user voice activity, trigger barge-in interruption
-        if self.is_speaking and rms > self.rms_threshold:
-            logger.info(f"[Barge-in] User voice detected (RMS: {rms:.1f} > threshold {self.rms_threshold}). Interrupting agent.")
-            self.interrupted = True
+        try:
+            # Resample 8kHz → 16kHz for Gemini Live input
+            pcm_16k = resample_8k_to_16k(pcm_8k_bytes)
             
-            # Clear in-flight audio queue to discard old voice frames
-            while not self.audio_queue.empty():
+            # Send raw audio to Gemini Live session
+            await self.session.send(
+                input=types.LiveClientRealtimeInput(
+                    media_chunks=[types.Blob(
+                        data=pcm_16k,
+                        mime_type="audio/pcm;rate=16000"
+                    )]
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error sending audio to Gemini Live: {e}")
+
+    async def _receive_loop(self):
+        """Background task: receives audio chunks and tool calls from Gemini Live."""
+        logger.info("Gemini Live receiver loop started.")
+        try:
+            while self.active:
+                async for response in self.session.receive():
+                    if not self.active:
+                        break
+                    try:
+                        # Handle server content (audio output from Gemini)
+                        if response.server_content:
+                            sc = response.server_content
+                            if sc.model_turn and sc.model_turn.parts:
+                                for part in sc.model_turn.parts:
+                                    if part.inline_data and part.inline_data.data:
+                                        # Gemini outputs 24kHz PCM — downsample to 8kHz for Exotel
+                                        pcm_24k = part.inline_data.data
+                                        pcm_8k = resample_24k_to_8k(pcm_24k)
+                                        
+                                        # Stream 320-byte chunks (20ms at 8kHz) to Exotel
+                                        chunk_size = 320
+                                        for i in range(0, len(pcm_8k), chunk_size):
+                                            if not self.active:
+                                                break
+                                            chunk = pcm_8k[i:i+chunk_size]
+                                            if len(chunk) < chunk_size:
+                                                chunk = chunk + b"\x00" * (chunk_size - len(chunk))
+                                            await self.send_audio_callback(chunk)
+                                            
+                                    if part.text:
+                                        logger.info(f"Gemini Live text response: '{part.text}'")
+                                        self.transcript_log.append({"sender": "assistant", "text": part.text})
+
+                            # Check if the model finished its turn
+                            if sc.turn_complete:
+                                logger.info("Gemini Live turn complete.")
+                        
+                        # Handle tool calls from Gemini
+                        if response.tool_call:
+                            logger.info(f"Gemini Live tool call received: {response.tool_call}")
+                            await self._handle_tool_calls(response.tool_call)
+                        
+                    except Exception as e:
+                        logger.error(f"Error in Gemini Live receiver loop payload handling: {e}")
+                
+                # Prevent CPU spin if connection ends abruptly
+                await asyncio.sleep(0.05)
+                    
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"Error in Gemini Live receiver: {e}")
+        logger.info("Gemini Live receiver loop ended.")
+
+    async def _handle_tool_calls(self, tool_call):
+        """Executes tool calls from Gemini and sends results back to the Live session."""
+        function_responses = []
+        
+        for fc in tool_call.function_calls:
+            fn_name = fc.name
+            fn_args = dict(fc.args) if fc.args else {}
+            fn_args["_phone"] = self.phone  # Inject phone context
+            
+            logger.info(f"Executing tool: {fn_name} with args: {fn_args}")
+            
+            handler = TOOL_HANDLERS.get(fn_name)
+            if handler:
                 try:
-                    self.audio_queue.get_nowait()
-                    self.audio_queue.task_done()
-                except asyncio.QueueEmpty:
-                    break
-                    
-        await self.audio_queue.put(pcm_8k_bytes)
-
-    async def _process_audio_queue(self):
-        """Continuously pops audio from the queue and sends to STT client."""
-        while self.active:
-            try:
-                chunk = await self.audio_queue.get()
-                await self.stt_client.send_audio_chunk(chunk)
-                self.audio_queue.task_done()
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in queue processor: {e}")
-                await asyncio.sleep(0.1)
-
-    async def on_transcript_received(self, text: str):
-        """Triggered when Sarvam STT finalizes a transcript segment."""
-        # Block transcription triggers only if we are currently active speaking and not interrupted
-        if (self.is_speaking and not self.interrupted) or not self.active:
-            return
+                    result = handler(fn_args)
+                    logger.info(f"Tool result for {fn_name}: {result}")
+                except Exception as e:
+                    result = f"Error executing {fn_name}: {str(e)}"
+                    logger.error(result)
+            else:
+                result = f"Unknown tool: {fn_name}"
+                logger.warning(result)
             
-        logger.info(f"Transcript received: '{text}'")
-        self.is_speaking = True
+            function_responses.append(types.FunctionResponse(
+                name=fn_name,
+                response={"result": result}
+            ))
         
+        # Send tool results back to Gemini Live session
         try:
-            # 1. Get response from Gemini
-            response_text = await self.agent.generate_response(text)
-            
-            # 2. Convert to Speech and Stream out
-            await self.speak_response(response_text)
+            await self.session.send(
+                input=types.LiveClientToolResponse(
+                    function_responses=function_responses
+                )
+            )
+            logger.info("Tool responses sent back to Gemini Live session.")
         except Exception as e:
-            logger.error(f"Error processing transcript: {e}")
-            self.is_speaking = False
-
-    async def speak_response(self, text: str):
-        """Synthesizes text to speech using Sarvam AI and plays/streams it back."""
-        self.is_speaking = True
-        self.interrupted = False
-        logger.info(f"Synthesizing response: '{text}'")
-        
-        try:
-            pcm_bytes = await get_sarvam_tts(text)
-            if not pcm_bytes:
-                logger.error("TTS returned empty audio.")
-                return
-                
-            chunk_size = 3200
-            sleep_time = 0.2
-            
-            for i in range(0, len(pcm_bytes), chunk_size):
-                if not self.active or self.interrupted:
-                    logger.info("Speech playback interrupted/stopped.")
-                    break
-                chunk = pcm_bytes[i:i+chunk_size]
-                # Pad final chunk if needed
-                if len(chunk) < chunk_size:
-                    chunk = chunk + b"\x00" * (chunk_size - len(chunk))
-                    
-                await self.send_audio_callback(chunk)
-                await asyncio.sleep(sleep_time)
-                
-        except Exception as e:
-            logger.error(f"Error playing response: {e}")
-        finally:
-            self.is_speaking = False
-            self.interrupted = False
-            logger.info("Speech playback completed.")
-
-    async def trigger_welcome_message(self, welcome_text: str):
-        """Plays the initial welcome greeting."""
-        if self.welcome_message_sent:
-            return
-        self.welcome_message_sent = True
-        self.is_speaking = True
-        
-        logger.info("Triggering greeting welcome message...")
-        await self.speak_response(welcome_text)
+            logger.error(f"Error sending tool response to Gemini Live: {e}")
 
     async def close(self):
-        """Cleans up pipeline connections and tasks."""
+        """Cleans up the pipeline and Gemini Live session."""
         logger.info("Closing Voice Pipeline...")
         self.active = False
         
-        if self.process_queue_task:
-            self.process_queue_task.cancel()
-            
-        await self.stt_client.close()
+        if self.receiver_task:
+            self.receiver_task.cancel()
+            try:
+                await self.receiver_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Close all resources in ExitStack
+        try:
+            await self.exit_stack.aclose()
+            logger.info("Gemini Live session and exit stack closed.")
+        except Exception as e:
+            logger.error(f"Error closing exit stack: {e}")
         
         # Save session logs to MongoDB
         try:
             from db.database import add_conversation
-            history = self.agent.get_history()
-            duration = 30
-            
-            if history:
+            if self.transcript_log:
                 add_conversation(
                     call_id=f"call_{int(asyncio.get_event_loop().time())}",
                     phone=self.phone,
-                    transcript=[{"sender": h["role"], "text": h["content"]} for h in history],
-                    duration_seconds=duration,
-                    mode="local",
+                    transcript=self.transcript_log,
+                    duration_seconds=30,
+                    mode="cloud",
                     direction=self.direction
                 )
                 logger.info("Conversation successfully logged to MongoDB.")
