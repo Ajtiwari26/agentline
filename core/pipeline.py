@@ -234,6 +234,7 @@ class VoicePipeline:
             # For outbound calls, send the welcome message as text to trigger Gemini to speak
             if welcome_text and self.direction == "outbound":
                 logger.info(f"Sending welcome prompt to Gemini Live: '{welcome_text}'")
+                self.transcript_log.append({"sender": "assistant", "text": welcome_text})
                 await self.session.send(
                     input=types.LiveClientContent(
                         turns=[types.Content(
@@ -310,6 +311,13 @@ class VoicePipeline:
                         if response.server_content:
                             sc = response.server_content
                             
+                            # Handle User turn transcription
+                            if hasattr(sc, "user_turn") and sc.user_turn and sc.user_turn.parts:
+                                for part in sc.user_turn.parts:
+                                    if part.text:
+                                        logger.info(f"User spoken transcript: '{part.text}'")
+                                        self.transcript_log.append({"sender": "user", "text": part.text})
+                                        
                             # Handle Gemini interruption
                             if sc.interrupted:
                                 logger.info("Gemini Live session was interrupted by user voice.")
@@ -379,11 +387,18 @@ class VoicePipeline:
             fn_args = dict(fc.args) if fc.args else {}
             fn_args["_phone"] = self.phone  # Inject phone context
             
+            # Log tool request to transcript
+            self.transcript_log.append({
+                "sender": "system", 
+                "text": f"Tool call requested: {fn_name} with parameters: {fn_args}"
+            })
+            
             # Hard safety: limit each tool to max 2 calls per conversation to prevent infinite retry loops
             self.tool_call_counts[fn_name] = self.tool_call_counts.get(fn_name, 0) + 1
             if self.tool_call_counts[fn_name] > 2:
                 result = f"Tool '{fn_name}' has already been called {self.tool_call_counts[fn_name] - 1} times. Maximum retries exceeded. Tell the user our team will follow up manually."
                 logger.warning(f"Blocked tool call '{fn_name}' — retry limit exceeded (count: {self.tool_call_counts[fn_name]})")
+                self.transcript_log.append({"sender": "system", "text": f"Tool response blocked: {result}"})
                 function_responses.append(types.FunctionResponse(
                     name=fn_name,
                     response={"result": result}
@@ -426,6 +441,9 @@ class VoicePipeline:
             else:
                 result = f"Unknown tool: {fn_name}"
                 logger.warning(result)
+            
+            # Log tool response result to transcript
+            self.transcript_log.append({"sender": "system", "text": f"Tool execution result: {result}"})
             
             function_responses.append(types.FunctionResponse(
                 name=fn_name,
