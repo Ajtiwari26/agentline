@@ -16,16 +16,20 @@ logger = logging.getLogger(__name__)
 # Templates for courses
 TEMPLATES = {
     "syllabus": {
-        "subject": "CourseWallah - AI Engineering Syllabus & Preview Link",
+        "subject": "CourseWallah - AI Engineering Program & Details",
         "body": """Hello Future AI Engineer,
 
-Thanks for talking to us today! As discussed, here are the course details for you:
+Thanks for talking to us today! As discussed, here are the course details:
 
 1. Local LLMs Running & Applications: Learn to run open-source models (Llama-3, Qwen) offline on your hardware, build private agentic workflows, and skip API fees.
 2. AI Models Training & Fine-Tuning: Learn custom fine-tuning and model training setups.
 
-Syllabus PDF Link: https://coursewallah.com/syllabus.pdf
-Free Live Class Link (Sunday 11 AM): https://coursewallah.com/live-preview
+You can view our course catalog and syllabus details directly on our website:
+👉 Course Catalog: https://www.coursewallah.com/courses
+
+Or download our official mobile app to access all free content, previews, and live classes:
+🤖 Google Play Store: https://play.google.com/store/apps/details?id=co.barney.vcunre
+🍏 Apple iOS App Store: Search for 'MyInstitute' app and enter Org Code: vcunre
 
 Let us know if you have any questions!
 
@@ -35,17 +39,22 @@ Mentor, CourseWallah
 """
     },
     "pricing": {
-        "subject": "CourseWallah - Course Pricing & EMI Options",
+        "subject": "CourseWallah - Course Pricing & Enrollment Portal",
         "body": """Hello Future AI Engineer,
 
-Here are the pricing and payment options for our AI Engineering programs:
+Here are the pricing and enrollment options for our AI Engineering programs:
 
 - Combined Program Fee: INR 14,999 (Inclusive of taxes)
 - Easy Monthly EMI Options available (Starting at INR 1,500/month)
 - 100% money-back guarantee if you complete the first 3 projects and don't find it valuable.
 
-Secure Payment Link: https://coursewallah.com/pay-enroll
-Syllabus PDF Link: https://coursewallah.com/syllabus.pdf
+You can enroll directly through our student portal or courses page:
+👉 Course Enrollment: https://www.coursewallah.com/courses
+👉 Student Login Portal: https://students.coursewallah.com/login?orgCode=vcunre
+
+If you prefer to study on mobile, you can download our app:
+🤖 Google Play Store: https://play.google.com/store/apps/details?id=co.barney.vcunre
+🍏 Apple iOS App Store: Search for 'MyInstitute' app and enter Org Code: vcunre
 
 Our manager will be in touch with you shortly to answer any payment or batch-timing questions.
 
