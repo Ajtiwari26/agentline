@@ -87,28 +87,38 @@ Founder, Nukkad Tech Solutions
 }
 
 def send_email_via_smtp(to_email: str, subject: str, body: str) -> bool:
-    """Sends email via standard SMTP."""
+    """Sends email via Vercel SMTP proxy to bypass Render port restrictions."""
     if not config.SMTP_USER or not config.SMTP_PASSWORD:
         logger.error("SMTP credentials missing in configuration.")
         return False
         
-    msg = MIMEMultipart()
-    msg['From'] = config.EMAIL_FROM or config.SMTP_USER
-    msg['To'] = to_email
-    msg['Subject'] = subject
+    payload = {
+        "to_email": to_email,
+        "subject": subject,
+        "body": body,
+        "smtp_user": config.SMTP_USER,
+        "smtp_password": config.SMTP_PASSWORD,
+        "email_from": config.EMAIL_FROM or config.SMTP_USER
+    }
     
-    msg.attach(MIMEText(body, 'plain'))
+    url = getattr(config, "EMAIL_PROXY_URL", "https://email-service-five-orpin.vercel.app/api/send")
+    logger.info(f"Forwarding email request to Vercel proxy: {url}")
     
     try:
-        server = smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT)
-        server.starttls()
-        server.login(config.SMTP_USER, config.SMTP_PASSWORD)
-        server.sendmail(msg['From'], to_email, msg.as_string())
-        server.quit()
-        logger.info(f"Email successfully sent to {to_email} via SMTP.")
-        return True
+        response = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
+        if response.status_code == 200:
+            res_data = response.json()
+            if res_data.get("success"):
+                logger.info(f"Email successfully sent to {to_email} via Vercel SMTP proxy.")
+                return True
+            else:
+                logger.error(f"Vercel email proxy returned failure: {res_data.get('error')}")
+                return False
+        else:
+            logger.error(f"Vercel email proxy failed with status {response.status_code}: {response.text}")
+            return False
     except Exception as e:
-        logger.error(f"SMTP email sending failed: {e}")
+        logger.error(f"Failed to communicate with Vercel email proxy: {e}")
         return False
 
 def send_email_via_resend(to_email: str, subject: str, body: str) -> bool:

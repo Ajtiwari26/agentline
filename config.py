@@ -31,6 +31,7 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+EMAIL_PROXY_URL = os.getenv("EMAIL_PROXY_URL", "https://email-service-five-orpin.vercel.app/api/send")
 
 # Exotel Config
 EXOTEL_API_KEY = os.getenv("EXOTEL_API_KEY", "")
