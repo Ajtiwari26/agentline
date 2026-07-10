@@ -11,7 +11,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
 
 # Database Config
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "agentline")
 
 # Email Config
