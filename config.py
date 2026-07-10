@@ -6,7 +6,14 @@ load_dotenv()
 
 # LLM Config
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-AGENT_MODE = os.getenv("AGENT_MODE", "portfolio")
+COURSEWALLAH = os.getenv("COURSEWALLAH", "false").lower() == "true"
+NUKKAD = os.getenv("NUKKAD", "true").lower() == "true"
+
+if NUKKAD:
+    AGENT_MODE = "portfolio"
+else:
+    AGENT_MODE = "coursewallah"
+
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Charon")
 
 # Sarvam AI Config
