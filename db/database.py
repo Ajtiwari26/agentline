@@ -39,6 +39,24 @@ def setup_indexes():
 
 def upsert_lead(phone: str, name: Optional[str] = None, interest_level: str = "cold", notes: str = "") -> Dict[str, Any]:
     db = get_db()
+    
+    # Retrieve existing lead to handle notes safely
+    lead = db.leads.find_one({"phone": phone})
+    
+    # Handle notes aggregation as a string
+    existing_notes = ""
+    if lead and "notes" in lead:
+        if isinstance(lead["notes"], list):
+            existing_notes = "\n".join(str(n) for n in lead["notes"])
+        else:
+            existing_notes = str(lead["notes"])
+            
+    new_notes = notes
+    if existing_notes and notes:
+        new_notes = existing_notes + f"\n{notes}"
+    elif existing_notes:
+        new_notes = existing_notes
+
     update_doc: Dict[str, Any] = {
         "$set": {
             "interest_level": interest_level,
@@ -49,9 +67,8 @@ def upsert_lead(phone: str, name: Optional[str] = None, interest_level: str = "c
     if name:
         update_doc["$set"]["name"] = name
         
-    if notes:
-        # Append notes if already exists, otherwise set
-        update_doc["$set"]["notes"] = notes
+    if new_notes:
+        update_doc["$set"]["notes"] = new_notes
         
     db.leads.update_one(
         {"phone": phone},
@@ -145,11 +162,24 @@ def schedule_callback(
     }
     result = db.callbacks.insert_one(callback_doc)
     
-    # Log note on lead
-    note_msg = f"\n[System] Scheduled callback for {scheduled_time.strftime('%Y-%m-%d %H:%M UTC')} due to: {reason}. Remarks: {remarks}. Doubts: {doubts}. Times called: {times_called}"
+    # Log note on lead safely as a string
+    note_msg = f"[System] Scheduled callback for {scheduled_time.strftime('%Y-%m-%d %H:%M UTC')} due to: {reason}. Remarks: {remarks}. Doubts: {doubts}. Times called: {times_called}"
+    
+    lead = db.leads.find_one({"phone": phone})
+    existing_notes = ""
+    if lead and "notes" in lead:
+        if isinstance(lead["notes"], list):
+            existing_notes = "\n".join(str(n) for n in lead["notes"])
+        else:
+            existing_notes = str(lead["notes"])
+            
+    new_notes = note_msg
+    if existing_notes:
+        new_notes = existing_notes + f"\n{note_msg}"
+        
     db.leads.update_one(
         {"phone": phone},
-        {"$set": {"last_contacted": datetime.utcnow()}, "$push": {"notes": note_msg}},
+        {"$set": {"last_contacted": datetime.utcnow(), "notes": new_notes}},
         upsert=True
     )
     
@@ -170,10 +200,23 @@ def log_email(phone: str, subject: str, body: str, status: str = "sent") -> None
     }
     db.emails.insert_one(email_doc)
     
-    # Append to lead notes
-    note_msg = f"\n[System] Email sent: '{subject}'"
+    # Append to lead notes safely as a string
+    note_msg = f"[System] Email sent: '{subject}'"
+    
+    lead = db.leads.find_one({"phone": phone})
+    existing_notes = ""
+    if lead and "notes" in lead:
+        if isinstance(lead["notes"], list):
+            existing_notes = "\n".join(str(n) for n in lead["notes"])
+        else:
+            existing_notes = str(lead["notes"])
+            
+    new_notes = note_msg
+    if existing_notes:
+        new_notes = existing_notes + f"\n{note_msg}"
+        
     db.leads.update_one(
         {"phone": phone},
-        {"$push": {"notes": note_msg}},
+        {"$set": {"notes": new_notes, "last_contacted": datetime.utcnow()}},
         upsert=True
     )

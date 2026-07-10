@@ -384,13 +384,35 @@ class VoicePipeline:
             
             handler = TOOL_HANDLERS.get(fn_name)
             if handler:
-                try:
-                    # Run synchronous blocking tools in a separate thread to prevent hanging the asyncio event loop
-                    result = await asyncio.to_thread(handler, fn_args)
-                    logger.info(f"Tool result for {fn_name}: {result}")
-                except Exception as e:
-                    result = f"Error executing {fn_name}: {str(e)}"
-                    logger.error(result)
+                # Decouple actions (email, callback, logging) from Gemini conversation flow to prevent timeouts
+                if fn_name in ["send_email", "schedule_callback", "log_lead_interest"]:
+                    # Define background runner task
+                    async def _background_task(h, a, name):
+                        try:
+                            res = await asyncio.to_thread(h, a)
+                            logger.info(f"Background tool {name} completed: {res}")
+                        except Exception as e:
+                            logger.error(f"Error in background tool {name}: {e}")
+                    
+                    # Fire-and-forget: run the task asynchronously in the background
+                    asyncio.create_task(_background_task(handler, fn_args, fn_name))
+                    
+                    # Return immediate success back to Gemini within milliseconds
+                    if fn_name == "send_email":
+                        result = f"Successfully initiated email sending to {fn_args.get('to_email')}."
+                    elif fn_name == "schedule_callback":
+                        result = f"Successfully scheduled callback for {fn_args.get('time_str')}."
+                    else:
+                        result = "Successfully logged lead details."
+                    logger.info(f"Returned instant tool response for action tool {fn_name} to Gemini Live.")
+                else:
+                    # Information retrieval tools (e.g. query_product_info) must be awaited synchronously
+                    try:
+                        result = await asyncio.to_thread(handler, fn_args)
+                        logger.info(f"Tool result for {fn_name}: {result}")
+                    except Exception as e:
+                        result = f"Error executing {fn_name}: {str(e)}"
+                        logger.error(result)
             else:
                 result = f"Unknown tool: {fn_name}"
                 logger.warning(result)
