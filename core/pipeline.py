@@ -155,6 +155,11 @@ class VoicePipeline:
             logger.info("Initializing Gemini Live client with AI Studio API Key")
             self.client = genai.Client(api_key=config.GEMINI_API_KEY)
         
+        # Determine the model name dynamically (Vertex AI vs AI Studio Live API)
+        is_vertex = sa_key_path and os.path.exists(sa_key_path)
+        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash-exp"
+        logger.info(f"Using Gemini Live model: {self.model_name}")
+        
         self.exit_stack = AsyncExitStack()
         self.session = None  # Gemini Live session handle
         self.receiver_task = None
@@ -190,11 +195,11 @@ class VoicePipeline:
             # Connect to the Gemini Live WebSocket using ExitStack
             self.session = await self.exit_stack.enter_async_context(
                 self.client.aio.live.connect(
-                    model="gemini-live-2.5-flash-native-audio",
+                    model=self.model_name,
                     config=live_config
                 )
             )
-            logger.info("Gemini Live session connected successfully!")
+            logger.info(f"Gemini Live session ({self.model_name}) connected successfully!")
             
             # Start the background receiver task (listens for audio output and tool calls from Gemini)
             self.receiver_task = asyncio.create_task(self._receive_loop())
