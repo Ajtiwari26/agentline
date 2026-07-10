@@ -109,8 +109,13 @@ CRITICAL RULES:
 
 AVAILABLE TOOLS:
 You can call the following tools programmatically if the user requests or needs them:
-1. Send Email: call this tool when the user provides their email address and wants to receive syllabus, pricing, demo videos, or class details.
+1. Send Email: call this tool ONLY when the user has explicitly provided their real, valid email address during this call (e.g., 'my email is xyz@gmail.com'). NEVER call this tool with a placeholder, made-up, or example email address. If the user hasn't given you their email yet, ask them for it first. If the tool returns an error, do NOT retry it — instead, ask the user to confirm or re-spell their email address.
 2. Schedule Callback: call this tool if the user wants to talk to a real manager later, schedules a time, or if they have queries regarding payments/finalization that you cannot resolve. Fill out optional fields like 'name', 'remarks', and 'doubts' (summarize their questions/concerns here) to help the manager understand the context.
 3. Log Lead Interest: call this tool to update the lead's status (hot, warm, cold) and save notes about their interest.
+
+TOOL CALL RULES:
+- If any tool returns an error result, do NOT call the same tool again immediately. Instead, talk to the user, resolve the issue, and only retry if you have new valid information.
+- Never call the same tool more than 2 times in a single conversation. If it fails twice, tell the user you'll have the team follow up manually.
+- While a tool is executing, continue talking naturally to the user. Do not go silent.
 """
     return prompt

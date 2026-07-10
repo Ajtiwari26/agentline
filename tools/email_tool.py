@@ -125,6 +125,13 @@ def send_template_email(phone: str, to_email: str, template_name: str = "syllabu
     Sends a pre-defined email template to the user.
     Called by the AI Agent as a tool.
     """
+    # Guard: Reject placeholder, empty, or obviously invalid email addresses immediately
+    # to prevent SMTP connection attempts and retry loops from Gemini
+    invalid_emails = ["lead@example.com", "example@example.com", "user@example.com", "test@example.com", ""]
+    if not to_email or to_email.strip().lower() in invalid_emails or "@" not in to_email or "example" in to_email.lower():
+        logger.warning(f"Email tool called with invalid/placeholder email: '{to_email}'. Returning early.")
+        return "ERROR: No valid email address was provided. You must ask the user for their real email address during the call before sending an email. Do NOT retry this tool until you have a real email."
+    
     template = TEMPLATES.get(template_name, TEMPLATES["syllabus"])
     subject = template["subject"]
     body = template["body"]

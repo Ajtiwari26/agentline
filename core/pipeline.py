@@ -182,6 +182,7 @@ class VoicePipeline:
         self.active = True
         self.welcome_sent = False
         self.transcript_log = []  # For MongoDB logging
+        self.tool_call_counts = {}  # Track per-tool call count to prevent infinite retry loops
 
     async def start(self):
         """Connects to Gemini Live API and starts audio streaming."""
@@ -366,6 +367,17 @@ class VoicePipeline:
             fn_name = fc.name
             fn_args = dict(fc.args) if fc.args else {}
             fn_args["_phone"] = self.phone  # Inject phone context
+            
+            # Hard safety: limit each tool to max 2 calls per conversation to prevent infinite retry loops
+            self.tool_call_counts[fn_name] = self.tool_call_counts.get(fn_name, 0) + 1
+            if self.tool_call_counts[fn_name] > 2:
+                result = f"Tool '{fn_name}' has already been called {self.tool_call_counts[fn_name] - 1} times. Maximum retries exceeded. Tell the user our team will follow up manually."
+                logger.warning(f"Blocked tool call '{fn_name}' — retry limit exceeded (count: {self.tool_call_counts[fn_name]})")
+                function_responses.append(types.FunctionResponse(
+                    name=fn_name,
+                    response={"result": result}
+                ))
+                continue
             
             logger.info(f"Executing tool: {fn_name} with args: {fn_args}")
             
