@@ -31,7 +31,14 @@ def send_email(to_email: str, template_name: str = "syllabus") -> str:
     phone = getattr(GeminiAgent, "_current_phone", "unknown")
     return send_template_email(phone=phone, to_email=to_email, template_name=template_name)
 
-def schedule_callback(time_str: str, reason: str) -> str:
+def schedule_callback(
+    time_str: str, 
+    reason: str,
+    name: str = "",
+    remarks: str = "",
+    doubts: str = "",
+    times_called: str = ""
+) -> str:
     """
     Schedules a callback for the human manager to call the lead back later.
     Use this if the lead asks for a call tomorrow, or next morning, or has query about pricing/payment.
@@ -39,9 +46,21 @@ def schedule_callback(time_str: str, reason: str) -> str:
     Args:
         time_str: The requested callback time ('morning', 'afternoon', 'tomorrow', or specific hour like '11:00 AM').
         reason: The reason for scheduling the callback (e.g. 'payment discussion', 'detailed syllabus review').
+        name: The lead's name if they shared it.
+        remarks: Any specific notes or details about the call/request.
+        doubts: Brief summary of the doubts, queries, or objections the lead raised during the call.
+        times_called: Number of times called if known (e.g., 'first', 'second').
     """
     phone = getattr(GeminiAgent, "_current_phone", "unknown")
-    return schedule_manager_callback(phone=phone, time_str=time_str, reason=reason)
+    return schedule_manager_callback(
+        phone=phone, 
+        time_str=time_str, 
+        reason=reason,
+        name=name,
+        remarks=remarks,
+        doubts=doubts,
+        times_called=times_called
+    )
 
 def log_lead_interest(interest_level: str, notes: str, name: str = "") -> str:
     """

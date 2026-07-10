@@ -30,7 +30,11 @@ TOOL_HANDLERS = {
     "schedule_callback": lambda args: schedule_manager_callback(
         phone=args.get("_phone", "unknown"),
         time_str=args.get("time_str", ""),
-        reason=args.get("reason", "")
+        reason=args.get("reason", ""),
+        name=args.get("name", ""),
+        remarks=args.get("remarks", ""),
+        doubts=args.get("doubts", ""),
+        times_called=args.get("times_called", "")
     ),
     "log_lead_interest": lambda args: update_lead_status(
         phone=args.get("_phone", "unknown"),
@@ -65,6 +69,10 @@ TOOL_DECLARATIONS = [
             properties={
                 "time_str": types.Schema(type="STRING", description="The requested callback time ('morning', 'afternoon', 'tomorrow', or specific hour like '11:00 AM')."),
                 "reason": types.Schema(type="STRING", description="The reason for scheduling the callback (e.g. 'payment discussion', 'detailed syllabus review')."),
+                "name": types.Schema(type="STRING", description="The lead's name if they shared it."),
+                "remarks": types.Schema(type="STRING", description="Any specific notes or details about the call/request."),
+                "doubts": types.Schema(type="STRING", description="Brief summary of the doubts, queries, or objections the lead raised during the call."),
+                "times_called": types.Schema(type="STRING", description="Number of times called if known (e.g., 'first', 'second')."),
             },
             required=["time_str", "reason"],
         ),

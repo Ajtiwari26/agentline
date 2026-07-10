@@ -8,7 +8,15 @@ from db.database import schedule_callback
 
 logger = logging.getLogger(__name__)
 
-def schedule_manager_callback(phone: str, time_str: str, reason: str) -> str:
+def schedule_manager_callback(
+    phone: str, 
+    time_str: str, 
+    reason: str,
+    name: str = "",
+    remarks: str = "",
+    doubts: str = "",
+    times_called: str = ""
+) -> str:
     """
     Schedules a callback for the manager.
     time_str can be:
@@ -47,7 +55,15 @@ def schedule_manager_callback(phone: str, time_str: str, reason: str) -> str:
                 
     # Save to MongoDB
     try:
-        callback_id = schedule_callback(phone=phone, scheduled_time=scheduled_dt, reason=reason)
+        callback_id = schedule_callback(
+            phone=phone, 
+            scheduled_time=scheduled_dt, 
+            reason=reason,
+            name=name,
+            remarks=remarks,
+            doubts=doubts,
+            times_called=times_called
+        )
         # Convert UTC back to IST for displaying to agent/caller
         ist_time = scheduled_dt + timedelta(hours=5, minutes=30)
         formatted_ist = ist_time.strftime("%I:%M %p on %d %b")

@@ -99,19 +99,54 @@ def add_conversation(call_id: str, phone: str, transcript: List[Dict[str, Any]],
     )
     return call_id
 
-def schedule_callback(phone: str, scheduled_time: datetime, reason: str) -> str:
+def schedule_callback(
+    phone: str, 
+    scheduled_time: datetime, 
+    reason: str,
+    name: Optional[str] = None,
+    remarks: Optional[str] = None,
+    doubts: Optional[str] = None,
+    times_called: Optional[str] = None
+) -> str:
     db = get_db()
+    
+    # 1. Automatically fetch name if not provided
+    if not name:
+        lead = db.leads.find_one({"phone": phone})
+        if lead:
+            name = lead.get("name", "")
+            
+    # 2. Automatically calculate times called if not provided
+    if not times_called:
+        call_count = db.conversations.count_documents({"phone": phone}) + 1
+        if call_count == 1:
+            times_called = "first"
+        elif call_count == 2:
+            times_called = "second"
+        elif call_count == 3:
+            times_called = "third"
+        else:
+            times_called = f"{call_count}th"
+            
+    # 3. Use reason as default remarks if remarks not provided
+    if not remarks:
+        remarks = reason
+        
     callback_doc = {
         "phone": phone,
+        "name": name or "",
         "scheduled_time": scheduled_time,
         "reason": reason,
+        "remarks": remarks,
+        "doubts": doubts or "",
+        "times_called": times_called,
         "status": "pending",
         "created_at": datetime.utcnow()
     }
     result = db.callbacks.insert_one(callback_doc)
     
     # Log note on lead
-    note_msg = f"\n[System] Scheduled callback for {scheduled_time.strftime('%Y-%m-%d %H:%M UTC')} due to: {reason}"
+    note_msg = f"\n[System] Scheduled callback for {scheduled_time.strftime('%Y-%m-%d %H:%M UTC')} due to: {reason}. Remarks: {remarks}. Doubts: {doubts}. Times called: {times_called}"
     db.leads.update_one(
         {"phone": phone},
         {"$set": {"last_contacted": datetime.utcnow()}, "$push": {"notes": note_msg}},
