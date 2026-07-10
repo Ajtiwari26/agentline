@@ -321,7 +321,8 @@ class VoicePipeline:
             handler = TOOL_HANDLERS.get(fn_name)
             if handler:
                 try:
-                    result = handler(fn_args)
+                    # Run synchronous blocking tools in a separate thread to prevent hanging the asyncio event loop
+                    result = await asyncio.to_thread(handler, fn_args)
                     logger.info(f"Tool result for {fn_name}: {result}")
                 except Exception as e:
                     result = f"Error executing {fn_name}: {str(e)}"
