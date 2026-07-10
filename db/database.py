@@ -79,7 +79,21 @@ def upsert_lead(phone: str, name: Optional[str] = None, interest_level: str = "c
 
 def get_lead(phone: str) -> Optional[Dict[str, Any]]:
     db = get_db()
-    return db.leads.find_one({"phone": phone})
+    # Try exact match first
+    lead = db.leads.find_one({"phone": phone})
+    if lead:
+        return lead
+        
+    # Check variations based on last 10 digits (common for Indian numbers)
+    if len(phone) >= 10:
+        last_10 = phone[-10:]
+        variations = [last_10, f"0{last_10}", f"+91{last_10}"]
+        for var in variations:
+            if var != phone:
+                lead = db.leads.find_one({"phone": var})
+                if lead:
+                    return lead
+    return None
 
 def add_conversation(call_id: str, phone: str, transcript: List[Dict[str, Any]], duration_seconds: int, mode: str, direction: str) -> str:
     db = get_db()

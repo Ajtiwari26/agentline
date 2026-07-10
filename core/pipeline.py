@@ -143,8 +143,17 @@ class VoicePipeline:
         self.direction = direction
         self.send_audio_callback = send_audio_callback
         
-        # Build system prompt from knowledge base
-        self.system_prompt = build_system_prompt()
+        # Fetch lead details from database if available
+        lead_info = None
+        try:
+            from db.database import get_lead
+            lead_info = get_lead(phone)
+            logger.info(f"Loaded lead context from DB: {lead_info}")
+        except Exception as e:
+            logger.error(f"Failed to load lead context from DB: {e}")
+            
+        # Build system prompt from knowledge base and lead context
+        self.system_prompt = build_system_prompt(lead_info)
         
         # Initialize the Gemini client (Vertex AI with service account)
         sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
