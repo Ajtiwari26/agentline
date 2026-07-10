@@ -168,6 +168,14 @@ class VoicePipeline:
         self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash-exp"
         logger.info(f"Using Gemini Live model: {self.model_name}")
         
+        # Interruption and Noise Gate states
+        self.interrupted = False
+        self.gate_open = False
+        self.gate_hold_counter = 0
+        self.gate_hold_limit = 12  # Hold for 12 chunks (12 * 20ms = 240ms)
+        self.open_threshold_db = -40.0
+        self.close_threshold_db = -45.0
+        
         self.exit_stack = AsyncExitStack()
         self.session = None  # Gemini Live session handle
         self.receiver_task = None
@@ -233,8 +241,32 @@ class VoicePipeline:
             self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz PCM from Exotel, resamples to 16kHz, and sends to Gemini Live."""
+        """Receives 8kHz PCM from Exotel, applies noise gate filtering, resamples, and sends to Gemini Live."""
         if not self.active or not self.session:
+            return
+            
+        # Calculate decibel level of incoming 8kHz PCM (16-bit)
+        import array
+        import math
+        samples = array.array('h', pcm_8k_bytes)
+        db = -100.0
+        if len(samples) > 0:
+            sum_squares = sum(float(s) * s for s in samples)
+            rms = math.sqrt(sum_squares / len(samples))
+            db = 20 * math.log10(rms / 32768.0) if rms > 0 else -100.0
+            
+        # Noise Gate Hysteresis evaluation
+        if db >= self.open_threshold_db:
+            self.gate_open = True
+            self.gate_hold_counter = self.gate_hold_limit
+        else:
+            if self.gate_open:
+                self.gate_hold_counter -= 1
+                if self.gate_hold_counter <= 0:
+                    self.gate_open = False
+                    
+        # Discard quiet chunks to prevent minor background noises from triggering Gemini VAD interruptions
+        if not self.gate_open:
             return
             
         try:
@@ -265,8 +297,27 @@ class VoicePipeline:
                         # Handle server content (audio output from Gemini)
                         if response.server_content:
                             sc = response.server_content
+                            
+                            # Handle Gemini interruption
+                            if sc.interrupted:
+                                logger.info("Gemini Live session was interrupted by user voice.")
+                                self.interrupted = True
+                                # Send clear command to Exotel to flush its playback buffer
+                                await self.send_audio_callback(b"CLEAR_STREAM")
+                                continue
+                                
+                            # Reset interruption flag on new model content
+                            if sc.model_turn:
+                                self.interrupted = False
+                                
+                            if self.interrupted:
+                                # Discard any leftover packets if we are interrupted
+                                continue
+                                
                             if sc.model_turn and sc.model_turn.parts:
                                 for part in sc.model_turn.parts:
+                                    if self.interrupted:
+                                        break
                                     if part.inline_data and part.inline_data.data:
                                         # Gemini outputs 24kHz PCM — downsample to 8kHz for Exotel
                                         pcm_24k = part.inline_data.data
@@ -275,7 +326,7 @@ class VoicePipeline:
                                         # Stream 320-byte chunks (20ms at 8kHz) to Exotel
                                         chunk_size = 320
                                         for i in range(0, len(pcm_8k), chunk_size):
-                                            if not self.active:
+                                            if not self.active or self.interrupted:
                                                 break
                                             chunk = pcm_8k[i:i+chunk_size]
                                             if len(chunk) < chunk_size:

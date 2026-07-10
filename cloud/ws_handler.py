@@ -32,6 +32,15 @@ async def handle_exotel_websocket(websocket: WebSocket):
             return
             
         try:
+            if pcm_bytes == b"CLEAR_STREAM":
+                clear_msg = {
+                    "event": "clear",
+                    "stream_sid": stream_sid
+                }
+                await websocket.send_text(json.dumps(clear_msg))
+                logger.info(f"Sent clear event to Exotel for stream {stream_sid} to flush playback buffer.")
+                return
+                
             pcm_base64 = base64.b64encode(pcm_bytes).decode("utf-8")
             media_msg = {
                 "event": "media",
