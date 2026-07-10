@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: agentline-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn cloud.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EXOTEL_API_KEY
+        sync: false
+      - key: EXOTEL_API_TOKEN
+        sync: false
+      - key: EXOTEL_ACCOUNT_SID
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URI
+        sync: false
