@@ -7,6 +7,10 @@ services:
     envVars:
       - key: PORT
         value: 10000
+      - key: COURSEWALLAH
+        value: "false"
+      - key: NUKKAD
+        value: "true"
       - key: GEMINI_API_KEY
         sync: false
       - key: EXOTEL_API_KEY
