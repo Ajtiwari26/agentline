@@ -86,10 +86,10 @@ async def handle_exotel_websocket(websocket: WebSocket):
                 )
                 logger.info(f"Resolved Call SID from start event: {call_sid}")
                 
-                # Force direction="outbound" to play welcome greeting immediately
+                # Use the actual direction from query params (auto-detected in server.py)
                 pipeline = VoicePipeline(
                     phone=caller_phone, 
-                    direction="outbound", 
+                    direction=query_direction, 
                     send_audio_callback=send_audio_callback,
                     call_sid=call_sid
                 )

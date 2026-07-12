@@ -154,8 +154,8 @@ class VoicePipeline:
         except Exception as e:
             logger.error(f"Failed to load lead context from DB: {e}")
             
-        # Build system prompt from knowledge base and lead context
-        self.system_prompt = build_system_prompt(lead_info)
+        # Build system prompt from knowledge base, lead context, and call direction
+        self.system_prompt = build_system_prompt(lead_info, direction=self.direction)
         
         # Initialize the Gemini client (Vertex AI with service account)
         sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
@@ -201,11 +201,22 @@ class VoicePipeline:
         """Connects to Gemini Live API and starts audio streaming."""
         logger.info(f"Starting Gemini Live Voice Pipeline for {self.phone} (Direction: {self.direction})...")
         
-        # Load welcome text for outbound calls
+        # Load welcome text based on call direction
         welcome_text = None
         if self.direction == "outbound":
             kb = load_kb()
             welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
+        elif self.direction == "inbound":
+            # For inbound calls, use a receptive welcome greeting
+            try:
+                import config
+                agent_mode = getattr(config, "AGENT_MODE", "portfolio")
+            except ImportError:
+                agent_mode = "portfolio"
+            if agent_mode == "portfolio":
+                welcome_text = "Hey! Nukkad Tech Solutions mein aapka swagat hai. Main Ajay hoon. Bataiye, kaise madad kar sakta hoon?"
+            else:
+                welcome_text = "Hey! CourseWallah mein welcome hai yaar. Main Ajay hoon. Bolo, kya jaanna hai?"
         
         # Configure the Gemini Live session
         live_config = types.LiveConnectConfig(
@@ -234,16 +245,17 @@ class VoicePipeline:
             # Start the background receiver task (listens for audio output and tool calls from Gemini)
             self.receiver_task = asyncio.create_task(self._receive_loop())
             
-            # For outbound calls, send the welcome message as text to trigger Gemini to speak
-            if welcome_text and self.direction == "outbound":
-                logger.info(f"Sending welcome prompt to Gemini Live: '{welcome_text}'")
+            # Send the welcome message to trigger Gemini to speak first
+            if welcome_text:
+                direction_context = "You just called this person." if self.direction == "outbound" else "This person just called you."
+                logger.info(f"Sending {self.direction} welcome prompt to Gemini Live: '{welcome_text}'")
                 self.transcript_log.append({"sender": "assistant", "text": welcome_text})
                 await self.session.send(
                     input=types.LiveClientContent(
                         turns=[types.Content(
                             role="user",
                             parts=[types.Part.from_text(
-                                text=f"You just called this person. Start the conversation by saying exactly this greeting (adapt naturally but keep the essence): {welcome_text}"
+                                text=f"{direction_context} Start the conversation by saying exactly this greeting (adapt naturally but keep the essence): {welcome_text}"
                             )]
                         )],
                         turn_complete=True

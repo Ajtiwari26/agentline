@@ -38,13 +38,25 @@ async def voicebot_endpoint(request: Request):
     """
     params = request.query_params
     call_from = params.get("CallFrom") or params.get("From") or "+919999999999"
-    direction = "outbound"  # Force outbound to play the welcome greeting immediately
+    
+    # Auto-detect direction from Exotel's callback parameters
+    # Outbound API calls (trigger_exotel_call.py) send CallType=trans and Direction contains "outbound"
+    # Inbound calls to our virtual number have Direction="inbound" or no CallType=trans
+    exotel_direction = params.get("Direction", "").lower()
+    exotel_call_type = params.get("CallType", "").lower()
+    
+    if "outbound" in exotel_direction or exotel_call_type == "trans":
+        direction = "outbound"
+    else:
+        direction = "inbound"
+    
+    logger.info(f"Exotel voicebot request — CallFrom: {call_from}, Exotel Direction: {exotel_direction}, CallType: {exotel_call_type} → Resolved direction: {direction}")
     
     host = request.headers.get("host")
     # Resolve scheme (wss for https, ws for http)
     scheme = "wss" if request.url.scheme == "https" else "ws"
     websocket_url = f"{scheme}://{host}/ws/exotel?phone={call_from}&direction={direction}"
-    logger.info(f"Received call routing query from Exotel. Directing to: {websocket_url}")
+    logger.info(f"Directing to: {websocket_url}")
     return {"url": websocket_url}
 
 @app.websocket("/ws/exotel")
