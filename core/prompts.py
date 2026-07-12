@@ -165,9 +165,23 @@ CRITICAL RULES:
   * Cost: {kb.get('objections', {}).get('cost_price', {}).get('response', '')}
   * AI Safety/Trust: {kb.get('objections', {}).get('ai_trust', {}).get('response', '')}
 
+EMAIL CAPTURE PROTOCOL (VERY IMPORTANT - follow this exactly when capturing a new email address over voice):
+When the customer needs to tell you their email address (i.e. it is NOT already known from LEAD CONTEXT, or they want to use a different one):
+1. BREAK IT DOWN: Read back the email in logical human-readable chunks, NOT letter-by-letter. Break it at natural word boundaries.
+   Example for "ajay.nukkadtechsolutions@gmail.com":
+   - Say: "Okay toh email hai — ajay DOT nukkad tech solutions AT gmail DOT com. Kya yeh sahi hai?"
+   Example for "guesserguysatwork@yahoo.com":
+   - Say: "Toh email hai — guesser guys at work AT yahoo DOT com. Sahi hai kya?"
+2. WAIT FOR CONFIRMATION: After reading it back, STOP and wait for the customer to confirm or correct.
+3. HANDLE PARTIAL CORRECTIONS: If the customer corrects only one part (e.g., "nahi guys nahi, gays hai"), then KEEP all other parts unchanged and only update the corrected part. Read back the FULL corrected email again for final confirmation.
+   Example: "Okay, toh guesser gays at work AT yahoo DOT com. Ab sahi hai?"
+4. NEVER GUESS: If you cannot understand a word, ask them to spell just that specific word. E.g., "Sorry, pehla word samajh nahi aaya. Kya aap sirf woh word spell kar sakte hain?"
+5. ONLY SEND AFTER FULL CONFIRMATION: Call the send_email tool ONLY after the customer has confirmed the complete email address is correct. Never send to an unconfirmed email.
+6. If the email is already known from LEAD CONTEXT below, still ask for confirmation: "Kya main aapko [known email] par email karoon?" If they say yes, use it. If they say no, follow the protocol above.
+
 AVAILABLE TOOLS:
 You can call the following tools programmatically if the user requests or needs them:
-1. Send Email: call this tool ONLY when the user has explicitly provided their real, valid email address during this call, or confirmed the email listed below in LEAD CONTEXT. NEVER call this tool with a guessed, default, mock, or placeholder email. You MUST ask for verification (e.g., "Kya main aapko tiwariajay033@gmail.com par email karoon?") before calling this tool. If they say no or have a different email, ask them to spell it out.
+1. Send Email: call this tool ONLY after the email has been fully confirmed using the EMAIL CAPTURE PROTOCOL above. NEVER call this tool with a guessed, default, mock, or placeholder email.
 2. Schedule Callback: call this tool if the user wants to talk to you (Ajay) later, schedules a time, or if they have queries regarding pricing/custom development details.
 3. Log Lead Interest: call this tool to update the lead's status (hot, warm, cold) and save notes about their interest or responses in the database.
 
@@ -201,9 +215,20 @@ CRITICAL RULES:
   * Hard for beginners: {kb.get('objections', {}).get('difficult_for_beginners', {}).get('response', '')}
   * Cost: {kb.get('objections', {}).get('cost_price', {}).get('response', '')}
 
+EMAIL CAPTURE PROTOCOL (VERY IMPORTANT - follow this exactly when capturing a new email address over voice):
+When the student needs to tell you their email address (i.e. it is NOT already known from LEAD CONTEXT, or they want to use a different one):
+1. BREAK IT DOWN: Read back the email in logical human-readable chunks, NOT letter-by-letter. Break it at natural word boundaries.
+   Example for "ajay.nukkadtechsolutions@gmail.com":
+   - Say: "Okay toh email hai — ajay DOT nukkad tech solutions AT gmail DOT com. Kya yeh sahi hai?"
+2. WAIT FOR CONFIRMATION: After reading it back, STOP and wait for the student to confirm or correct.
+3. HANDLE PARTIAL CORRECTIONS: If the student corrects only one part, KEEP all other parts unchanged and only update the corrected part. Read back the FULL corrected email again for final confirmation.
+4. NEVER GUESS: If you cannot understand a word, ask them to spell just that specific word.
+5. ONLY SEND AFTER FULL CONFIRMATION: Call the send_email tool ONLY after the student has confirmed the complete email address is correct.
+6. If the email is already known from LEAD CONTEXT below, still ask for confirmation before sending.
+
 AVAILABLE TOOLS:
 You can call the following tools programmatically if the user requests or needs them:
-1. Send Email: call this tool ONLY when the user has explicitly provided their real, valid email address during this call, or confirmed the email listed below in LEAD CONTEXT. NEVER call this tool with a guessed, default, mock, or placeholder email. You MUST ask for verification (e.g., "Kya main aapko tiwariajay033@gmail.com par email karoon?") before calling this tool. If they say no or have a different email, ask them to spell it out.
+1. Send Email: call this tool ONLY after the email has been fully confirmed using the EMAIL CAPTURE PROTOCOL above. NEVER call this tool with a guessed, default, mock, or placeholder email.
 2. Schedule Callback: call this tool if the user wants to talk to a real manager later, schedules a time, or if they have queries regarding payments/finalization that you cannot resolve.
 3. Log Lead Interest: call this tool to update the lead's status (hot, warm, cold) and save notes about their interest.
 

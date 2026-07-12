@@ -29,45 +29,6 @@ async def startup_event():
 async def health_check():
     return {"status": "healthy", "mode": "cloud_inbound"}
 
-@app.get("/test-gemini")
-async def test_gemini_models():
-    import os
-    from google import genai
-    from google.oauth2 import service_account
-    
-    sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-    project = os.getenv("GCP_PROJECT", "igsl-67e70")
-    
-    if not sa_key_path or not os.path.exists(sa_key_path):
-        return {"error": f"No service account key found at path: {sa_key_path}"}
-        
-    try:
-        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-        credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
-        client = genai.Client(
-            vertexai=True,
-            project=project,
-            location="us-central1",
-            credentials=credentials
-        )
-        
-        models = [
-            "gemini-1.5-flash", 
-            "gemini-1.5-flash-001", 
-            "gemini-1.5-flash-002", 
-            "gemini-2.5-flash", 
-            "gemini-2.0-flash-exp"
-        ]
-        results = {}
-        for m in models:
-            try:
-                res = client.models.generate_content(model=m, contents="ping")
-                results[m] = {"status": "success", "text": res.text.strip() if res.text else ""}
-            except Exception as e:
-                results[m] = {"status": "failed", "error": str(e)}
-        return {"results": results}
-    except Exception as e:
-        return {"error": str(e)}
 
 @app.api_route("/voicebot", methods=["GET", "POST"])
 async def voicebot_endpoint(request: Request):
