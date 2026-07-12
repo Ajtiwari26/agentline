@@ -79,8 +79,20 @@ async def handle_exotel_websocket(websocket: WebSocket):
                 )
                 logger.info(f"Resolved caller phone number: {caller_phone}")
                 
+                # Fetch Call SID
+                call_sid = (
+                    data.get("start", {}).get("callSid") or 
+                    data.get("start", {}).get("call_sid")
+                )
+                logger.info(f"Resolved Call SID from start event: {call_sid}")
+                
                 # Force direction="outbound" to play welcome greeting immediately
-                pipeline = VoicePipeline(phone=caller_phone, direction="outbound", send_audio_callback=send_audio_callback)
+                pipeline = VoicePipeline(
+                    phone=caller_phone, 
+                    direction="outbound", 
+                    send_audio_callback=send_audio_callback,
+                    call_sid=call_sid
+                )
                 # Run the pipeline startup in a background task so we don't block the WebSocket loop
                 asyncio.create_task(pipeline.start())
                 
@@ -96,6 +108,14 @@ async def handle_exotel_websocket(websocket: WebSocket):
                     
             elif event == "stop":
                 logger.info(f"Stream stopped for SID: {stream_sid}")
+                if pipeline and not getattr(pipeline, "call_sid", None):
+                    call_sid = (
+                        data.get("stop", {}).get("call_sid") or 
+                        data.get("stop", {}).get("callSid")
+                    )
+                    if call_sid:
+                        pipeline.call_sid = call_sid
+                        logger.info(f"Resolved Call SID from stop event fallback: {call_sid}")
                 break
                 
     except WebSocketDisconnect:

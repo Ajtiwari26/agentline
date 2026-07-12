@@ -95,7 +95,16 @@ def get_lead(phone: str) -> Optional[Dict[str, Any]]:
                     return lead
     return None
 
-def add_conversation(call_id: str, phone: str, transcript: List[Dict[str, Any]], duration_seconds: int, mode: str, direction: str) -> str:
+def add_conversation(
+    call_id: str, 
+    phone: str, 
+    transcript: List[Dict[str, Any]], 
+    duration_seconds: int, 
+    mode: str, 
+    direction: str,
+    summary: Optional[str] = None,
+    recording_url: Optional[str] = None
+) -> str:
     db = get_db()
     
     # Transform transcript turns to append timestamp if not present
@@ -116,18 +125,52 @@ def add_conversation(call_id: str, phone: str, transcript: List[Dict[str, Any]],
         "direction": direction,
         "timestamp": datetime.utcnow()
     }
-    
+    if summary:
+        convo["summary"] = summary
+    if recording_url:
+        convo["recording_url"] = recording_url
+        
     db.conversations.insert_one(convo)
     
-    # Link to lead
-    db.leads.update_one(
-        {"phone": phone},
-        {
-            "$push": {"conversation_ids": call_id},
-            "$set": {"last_contacted": datetime.utcnow()}
-        },
-        upsert=True
-    )
+    # Append summary and recording link to lead notes
+    note_msg = ""
+    if summary:
+        note_msg += f"\n[AI Call Summary]:\n{summary}"
+    if recording_url:
+        note_msg += f"\n[Call Recording]: {recording_url}"
+        
+    if note_msg:
+        # Fetch current lead
+        lead = db.leads.find_one({"phone": phone})
+        existing_notes = ""
+        if lead and "notes" in lead:
+            if isinstance(lead["notes"], list):
+                existing_notes = "\n".join(str(n) for n in lead["notes"])
+            else:
+                existing_notes = str(lead["notes"])
+                
+        new_notes = existing_notes + note_msg if existing_notes else note_msg.strip()
+        db.leads.update_one(
+            {"phone": phone},
+            {
+                "$push": {"conversation_ids": call_id},
+                "$set": {
+                    "last_contacted": datetime.utcnow(),
+                    "notes": new_notes
+                }
+            },
+            upsert=True
+        )
+    else:
+        # Link to lead
+        db.leads.update_one(
+            {"phone": phone},
+            {
+                "$push": {"conversation_ids": call_id},
+                "$set": {"last_contacted": datetime.utcnow()}
+            },
+            upsert=True
+        )
     return call_id
 
 def schedule_callback(

@@ -130,7 +130,7 @@ def resample_24k_to_8k(pcm_24k: bytes) -> bytes:
 
 
 class VoicePipeline:
-    def __init__(self, phone: str, direction: str = "outbound", send_audio_callback: Callable[[bytes], Coroutine[Any, Any, None]] = None):
+    def __init__(self, phone: str, direction: str = "outbound", send_audio_callback: Callable[[bytes], Coroutine[Any, Any, None]] = None, call_sid: str = None):
         """
         Voice Pipeline using Gemini Live API for real-time audio-to-audio conversation.
         
@@ -138,10 +138,12 @@ class VoicePipeline:
             phone: The phone number of the lead.
             direction: "inbound" or "outbound".
             send_audio_callback: Async callback that accepts 8kHz 16-bit PCM bytes to play or transmit.
+            call_sid: The Exotel Call Sid for call tracking/recording.
         """
         self.phone = phone
         self.direction = direction
         self.send_audio_callback = send_audio_callback
+        self.call_sid = call_sid
         
         # Fetch lead details from database if available
         lead_info = None
@@ -480,18 +482,96 @@ class VoicePipeline:
         except Exception as e:
             logger.error(f"Error closing exit stack: {e}")
         
-        # Save session logs to MongoDB
-        try:
-            from db.database import add_conversation
-            if self.transcript_log:
+        # Save session logs to MongoDB with background summarization and recording fetching
+        async def _background_post_call_processing(call_sid, phone, transcript, direction):
+            try:
+                # 1. Generate summary via Gemini
+                summary = None
+                if transcript:
+                    logger.info("Generating call summary via Gemini...")
+                    convo_text = ""
+                    for turn in transcript:
+                        sender = turn.get("sender", "unknown").upper()
+                        text = turn.get("text", "")
+                        convo_text += f"{sender}: {text}\n"
+                    
+                    prompt = f"""
+You are an expert AI CRM manager. Review the following phone call transcript between our AI assistant (Ajay) and a customer.
+Generate a structured, professional summary (max 3-4 bullet points) covering:
+1. Client Profile & Business details (if mentioned).
+2. Key points discussed (queries, pricing, WhatsApp/Voice agent interest).
+3. Client Objections or Doubts (if any).
+4. Concrete Next Steps & Action Items (e.g., callbacks, emails).
+
+Keep it concise and clear in English.
+
+TRANSCRIPT:
+{convo_text}
+"""
+                    try:
+                        response = await asyncio.to_thread(
+                            self.client.models.generate_content,
+                            model="gemini-1.5-flash",
+                            contents=prompt
+                        )
+                        summary = response.text
+                        logger.info(f"Gemini Call Summary: {summary}")
+                    except Exception as e:
+                        logger.error(f"Error generating call summary via Gemini: {e}")
+
+                # 2. Fetch recording URL from Exotel
+                recording_url = None
+                if call_sid:
+                    logger.info(f"Fetching recording URL from Exotel for Call SID: {call_sid}...")
+                    api_key = os.getenv("EXOTEL_API_KEY")
+                    api_token = os.getenv("EXOTEL_API_TOKEN")
+                    account_sid = os.getenv("EXOTEL_ACCOUNT_SID")
+                    
+                    if api_key and api_token and account_sid:
+                        import requests
+                        url = f"https://api.exotel.com/v1/Accounts/{account_sid}/Calls/{call_sid}.json"
+                        for attempt in range(4):
+                            # Progressive delay: wait 5s, 10s, 15s, 20s
+                            await asyncio.sleep(5 + attempt * 5)
+                            try:
+                                res = await asyncio.to_thread(
+                                    requests.get, url, auth=(api_key, api_token), timeout=10
+                                )
+                                if res.status_code == 200:
+                                    res_data = res.json()
+                                    call_info = res_data.get("Call", {})
+                                    rec_url = call_info.get("RecordingUrl")
+                                    if rec_url:
+                                        recording_url = rec_url
+                                        logger.info(f"Successfully retrieved Exotel recording URL: {recording_url}")
+                                        break
+                                    else:
+                                        logger.info(f"Attempt {attempt+1}: Call details found, but RecordingUrl not ready yet.")
+                                else:
+                                    logger.warning(f"Exotel details failed with status {res.status_code}: {res.text}")
+                            except Exception as e:
+                                logger.error(f"Error fetching call details: {e}")
+                                
+                # 3. Save to database
+                from db.database import add_conversation
                 add_conversation(
                     call_id=f"call_{int(asyncio.get_event_loop().time())}",
-                    phone=self.phone,
-                    transcript=self.transcript_log,
+                    phone=phone,
+                    transcript=transcript,
                     duration_seconds=30,
                     mode="cloud",
-                    direction=self.direction
+                    direction=direction,
+                    summary=summary,
+                    recording_url=recording_url
                 )
-                logger.info("Conversation successfully logged to MongoDB.")
-        except Exception as e:
-            logger.error(f"Failed to log conversation to DB: {e}")
+                logger.info("Call successfully summarized, recording fetched, and logged to MongoDB.")
+            except Exception as e:
+                logger.error(f"Error in background post call processing: {e}")
+
+        # Fire and forget the background task
+        asyncio.create_task(_background_post_call_processing(
+            call_sid=self.call_sid,
+            phone=self.phone,
+            transcript=list(self.transcript_log) if self.transcript_log else [],
+            direction=self.direction
+        ))
