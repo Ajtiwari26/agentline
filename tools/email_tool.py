@@ -118,323 +118,134 @@ Output ONLY valid JSON. No markdown backticks.
 # NO SVGs, NO data: URIs (Gmail strips both)
 # ──────────────────────────────────────────────────
 def _build_portfolio_html(lead_name: str, pitch_text: str, callout_text: str) -> str:
-    greeting = f"Hi <b>{lead_name}</b>," if lead_name else "Hi there,"
     logo_url = f"{EMAIL_ASSETS_URL}/logo.png"
     ai_phone_url = f"{EMAIL_ASSETS_URL}/ai-phone.png"
-    founder_url = f"{EMAIL_ASSETS_URL}/founder.jpg"
+    display_name = lead_name if lead_name else "there"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nukkad Tech Solutions</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nukkad Tech Solutions Newsletter</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Sora:wght@600;700&amp;display=swap" rel="stylesheet"/>
 </head>
-<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing:antialiased;">
-
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3f4f6; padding:20px 0;">
-<tr><td align="center">
-<table width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px; width:100%; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 25px rgba(0,0,0,0.06);">
-
-  <!-- ═══════════════════════════════════════════════
-       HEADER: Logo
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:25px 30px 0 30px; background-color:#ffffff;">
-    <picture>
-      <source srcset="https://nukkadtechsolutions.vercel.app/full-logo.svg" type="image/svg+xml">
-      <img src="{logo_url}" width="220" height="auto" alt="Nukkad Tech Solutions" style="display:block; max-width:220px; height:auto;" />
-    </picture>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       HERO: Greeting + AI Phone Image
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:20px 30px; background-color:#ffffff;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td width="55%" valign="top" style="padding-right:15px;">
-        <p style="margin:0 0 4px 0; font-size:12px; color:#DC2626; font-weight:700; letter-spacing:0.5px;">⚡ AI-Powered Automation &bull; Custom Development &bull; Digital Growth</p>
-        <p style="font-size:20px; font-weight:800; color:#111827; margin:12px 0 14px 0; line-height:1.3;">{greeting}</p>
-        <p style="font-size:14px; line-height:1.7; color:#374151; margin:0 0 16px 0;">{pitch_text}</p>
-      </td>
-      <td width="45%" valign="middle" align="center">
-        <img src="{ai_phone_url}" width="240" height="auto" alt="AI Automation" style="display:block; max-width:240px; height:auto;" />
-      </td>
-    </tr>
-    </table>
-
-    <!-- Callout Box -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:5px;">
-    <tr><td style="border-left:4px solid #DC2626; background-color:#FEF2F2; padding:14px 16px; border-radius:0 6px 6px 0;">
-      <p style="margin:0; font-size:13.5px; line-height:1.6; color:#1F2937;">👉 {callout_text}</p>
-    </td></tr>
-    </table>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       PIPELINE: Your AI Opportunity
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:30px 30px; background-color:#fafafa; border-top:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr><td style="padding-bottom:8px;">
-      <h2 style="font-size:17px; font-weight:800; color:#111827; margin:0; text-align:center;">Your AI Opportunity for <span style="color:#DC2626;">{lead_name or "Your Business"}</span></h2>
-      <p style="font-size:12px; color:#6B7280; margin:4px 0 20px 0; text-align:center;">Here's how we can transform your operations with AI Automation</p>
-    </td></tr>
-    <tr><td>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <!-- Step 1 -->
-        <td width="18%" align="center" valign="top" style="padding:0 2px;">
-          <div style="width:42px; height:42px; border-radius:50%; background-color:#DC2626; text-align:center; line-height:42px; font-size:20px; margin:0 auto 8px auto;">👥</div>
-          <p style="margin:0; font-size:10px; font-weight:800; color:#111827; line-height:1.3;">Business Lead Follow-ups</p>
-          <p style="margin:3px 0 0 0; font-size:9px; color:#6B7280; line-height:1.3;">Auto follow-up with business leads via calls &amp; messages</p>
-        </td>
-        <!-- Arrow -->
-        <td width="4%" align="center" valign="top" style="padding-top:12px; font-size:14px; color:#D1D5DB;">➜</td>
-        <!-- Step 2 -->
-        <td width="18%" align="center" valign="top" style="padding:0 2px;">
-          <div style="width:42px; height:42px; border-radius:50%; background-color:#DC2626; text-align:center; line-height:42px; font-size:20px; margin:0 auto 8px auto;">💬</div>
-          <p style="margin:0; font-size:10px; font-weight:800; color:#111827; line-height:1.3;">WhatsApp &amp; Email Auto</p>
-          <p style="margin:3px 0 0 0; font-size:9px; color:#6B7280; line-height:1.3;">Instantly send proposals and business details via WhatsApp/Email</p>
-        </td>
-        <!-- Arrow -->
-        <td width="4%" align="center" valign="top" style="padding-top:12px; font-size:14px; color:#D1D5DB;">➜</td>
-        <!-- Step 3 -->
-        <td width="18%" align="center" valign="top" style="padding:0 2px;">
-          <div style="width:42px; height:42px; border-radius:50%; background-color:#DC2626; text-align:center; line-height:42px; font-size:20px; margin:0 auto 8px auto;">📞</div>
-          <p style="margin:0; font-size:10px; font-weight:800; color:#111827; line-height:1.3;">Voice AI Calling Agents</p>
-          <p style="margin:3px 0 0 0; font-size:9px; color:#6B7280; line-height:1.3;">AI agents call leads &amp; book appointments</p>
-        </td>
-        <!-- Arrow -->
-        <td width="4%" align="center" valign="top" style="padding-top:12px; font-size:14px; color:#D1D5DB;">➜</td>
-        <!-- Step 4 -->
-        <td width="18%" align="center" valign="top" style="padding:0 2px;">
-          <div style="width:42px; height:42px; border-radius:50%; background-color:#DC2626; text-align:center; line-height:42px; font-size:20px; margin:0 auto 8px auto;">📅</div>
-          <p style="margin:0; font-size:10px; font-weight:800; color:#111827; line-height:1.3;">Schedule Appointments</p>
-          <p style="margin:3px 0 0 0; font-size:9px; color:#6B7280; line-height:1.3;">Book callback &amp; strategy sessions</p>
-        </td>
-        <!-- Arrow -->
-        <td width="4%" align="center" valign="top" style="padding-top:12px; font-size:14px; color:#D1D5DB;">➜</td>
-        <!-- Step 5 -->
-        <td width="18%" align="center" valign="top" style="padding:0 2px;">
-          <div style="width:42px; height:42px; border-radius:50%; background-color:#DC2626; text-align:center; line-height:42px; font-size:20px; margin:0 auto 8px auto;">📈</div>
-          <p style="margin:0; font-size:10px; font-weight:800; color:#111827; line-height:1.3;">CRM &amp; Analytics</p>
-          <p style="margin:3px 0 0 0; font-size:9px; color:#6B7280; line-height:1.3;">Track every lead &amp; conversion in real-time</p>
-        </td>
-      </tr>
-      </table>
-    </td></tr>
-    </table>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       SERVICES: What We Can Build For You
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:30px 30px; background-color:#ffffff;">
-    <h2 style="font-size:16px; font-weight:800; color:#111827; margin:0 0 22px 0; text-align:center; letter-spacing:0.5px;">
-      ── WHAT WE CAN BUILD FOR <span style="color:#DC2626;">YOU</span> ──
-    </h2>
-
-    <!-- Row 1: 4 cards -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;">
-    <tr>
-      <td width="25%" valign="top" style="padding:0 4px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:16px 8px;">
-          <div style="width:38px; height:38px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 10px auto; text-align:center; line-height:38px; font-size:20px;">🎙️</div>
-          <p style="margin:0 0 5px 0; font-size:11.5px; font-weight:800; color:#111827;">Voice AI Agents</p>
-          <p style="margin:0; font-size:9.5px; line-height:1.4; color:#6B7280;">Autonomous inbound &amp; outbound call agents that handle sales, support, and follow-ups 24/7 — just like the one you spoke with!</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="25%" valign="top" style="padding:0 4px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:16px 8px;">
-          <div style="width:38px; height:38px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 10px auto; text-align:center; line-height:38px; font-size:20px;">💬</div>
-          <p style="margin:0 0 5px 0; font-size:11.5px; font-weight:800; color:#111827;">WhatsApp CRM</p>
-          <p style="margin:0; font-size:9.5px; line-height:1.4; color:#6B7280;">AI-powered WhatsApp bots that resolve inquiries, book meetings, and update your CRM — even at 2 AM.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="25%" valign="top" style="padding:0 4px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:16px 8px;">
-          <div style="width:38px; height:38px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 10px auto; text-align:center; line-height:38px; font-size:20px;">🤖</div>
-          <p style="margin:0 0 5px 0; font-size:11.5px; font-weight:800; color:#111827;">Chat Agents</p>
-          <p style="margin:0; font-size:9.5px; line-height:1.4; color:#6B7280;">Intelligent AI chatbots for your website, Instagram, Messenger &amp; more. Engage, qualify &amp; convert automatically.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="25%" valign="top" style="padding:0 4px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:16px 8px;">
-          <div style="width:38px; height:38px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 10px auto; text-align:center; line-height:38px; font-size:20px;">🗣️</div>
-          <p style="margin:0 0 5px 0; font-size:11.5px; font-weight:800; color:#111827;">Voice Agents</p>
-          <p style="margin:0; font-size:9.5px; line-height:1.4; color:#6B7280;">Human-like AI voice agents for customer support, sales, surveys, reminders &amp; more — 100% automated.</p>
-        </td></tr>
-        </table>
-      </td>
-    </tr>
-    </table>
-
-    <!-- Row 2: 5 cards -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td width="20%" valign="top" style="padding:0 3px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:12px 5px;">
-          <div style="width:32px; height:32px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 8px auto; text-align:center; line-height:32px; font-size:16px;">📱</div>
-          <p style="margin:0 0 4px 0; font-size:10px; font-weight:800; color:#111827;">WhatsApp Auto</p>
-          <p style="margin:0; font-size:8.5px; line-height:1.3; color:#6B7280;">Auto-replies, broadcasts, templates, reminders, payments &amp; CRM — all on autopilot.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="20%" valign="top" style="padding:0 3px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:12px 5px;">
-          <div style="width:32px; height:32px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 8px auto; text-align:center; line-height:32px; font-size:16px;">👥</div>
-          <p style="margin:0 0 4px 0; font-size:10px; font-weight:800; color:#111827;">AI Sales Team</p>
-          <p style="margin:0; font-size:8.5px; line-height:1.3; color:#6B7280;">AI SDRs that find leads, qualify, follow up &amp; book meetings for your sales team.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="20%" valign="top" style="padding:0 3px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:12px 5px;">
-          <div style="width:32px; height:32px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 8px auto; text-align:center; line-height:32px; font-size:16px;">🏢</div>
-          <p style="margin:0 0 4px 0; font-size:10px; font-weight:800; color:#111827;">AI Receptionist</p>
-          <p style="margin:0; font-size:8.5px; line-height:1.3; color:#6B7280;">Digital receptionist that handles incoming calls, answers FAQs, routes calls &amp; books appointments.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="20%" valign="top" style="padding:0 3px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:12px 5px;">
-          <div style="width:32px; height:32px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 8px auto; text-align:center; line-height:32px; font-size:16px;">⚙️</div>
-          <p style="margin:0 0 4px 0; font-size:10px; font-weight:800; color:#111827;">Workflow Auto</p>
-          <p style="margin:0; font-size:8.5px; line-height:1.3; color:#6B7280;">Automate your business workflows, approvals, notifications, CRM, HR, finance &amp; more with AI.</p>
-        </td></tr>
-        </table>
-      </td>
-      <td width="20%" valign="top" style="padding:0 3px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E5E7EB; border-radius:10px; text-align:center;">
-        <tr><td style="padding:12px 5px;">
-          <div style="width:32px; height:32px; border-radius:50%; background-color:#FEF2F2; margin:0 auto 8px auto; text-align:center; line-height:32px; font-size:16px;">💻</div>
-          <p style="margin:0 0 4px 0; font-size:10px; font-weight:800; color:#111827;">Custom Dev</p>
-          <p style="margin:0; font-size:8.5px; line-height:1.3; color:#6B7280;">Web apps, mobile apps, dashboards &amp; APIs — custom-built for your business at a fraction of in-house cost.</p>
-        </td></tr>
-        </table>
-      </td>
-    </tr>
-    </table>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       METRICS: Why Businesses Choose Us
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:30px 25px; background-color:#111827;">
-    <h2 style="font-size:14px; font-weight:800; text-align:center; color:#ffffff; margin:0 0 22px 0; letter-spacing:0.8px; text-transform:uppercase;">
-      WHY BUSINESSES CHOOSE <span style="color:#E11D48;">NUKKAD TECH SOLUTIONS</span>
-    </h2>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">💰</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">Save up to 70%</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">operational costs</p>
-      </td>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">🕐</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">24x7 AI</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">employees working non-stop</p>
-      </td>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">⚡</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">Instant Response</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">to every lead &amp; customer</p>
-      </td>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">📊</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">Higher Conversion</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">with AI-powered engagement</p>
-      </td>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">🤝</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">Human Handoff</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">when needed, seamlessly</p>
-      </td>
-      <td width="16.6%" align="center" valign="top" style="padding:0 3px;">
-        <div style="width:40px; height:40px; border-radius:50%; border:2px solid #E11D48; margin:0 auto 8px auto; text-align:center; line-height:40px; font-size:18px;">📈</div>
-        <p style="margin:0 0 3px 0; font-size:10px; font-weight:800; color:#ffffff;">Real-time Analytics</p>
-        <p style="margin:0; font-size:8px; color:#9CA3AF; line-height:1.3;">and performance tracking</p>
-      </td>
-    </tr>
-    </table>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       CTA BANNER
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:35px 30px; background-color:#DC2626; text-align:center;">
-    <div style="font-size:28px; margin-bottom:12px;">📅</div>
-    <h3 style="margin:0 0 8px 0; font-size:22px; font-weight:900; color:#ffffff;">Ready to Build Your AI Workforce?</h3>
-    <p style="margin:0 0 22px 0; font-size:14px; color:rgba(255,255,255,0.9); line-height:1.5;">
-      Let's discuss how we can automate &amp; grow <b>{lead_name or "your business"}</b> together.
-    </p>
-    <a href="mailto:tiwariajay033@gmail.com?subject=Demo%20Request%20-%20Nukkad%20Tech%20Solutions"
-       style="display:inline-block; background-color:#ffffff; color:#DC2626; text-decoration:none; font-size:13px; font-weight:900; padding:14px 36px; border-radius:8px; letter-spacing:0.8px; text-transform:uppercase;">
-      SCHEDULE A LIVE DEMO &nbsp;→
-    </a>
-  </td></tr>
-
-  <!-- ═══════════════════════════════════════════════
-       FOOTER: Signature
-       ═══════════════════════════════════════════════ -->
-  <tr><td style="padding:22px 30px; background-color:#ffffff; border-top:1px solid #E5E7EB;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <!-- Founder photo + name -->
-      <td width="40%" valign="middle">
-        <table cellpadding="0" cellspacing="0" border="0">
+<body style="margin:0; padding:0; background-color:#f7f9fd; font-family:'Inter', sans-serif; color:#191c1f; -webkit-font-smoothing:antialiased;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f9fd; padding:40px 0;">
+  <tr>
+    <td align="center">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background-color:#ffffff; border:1px solid #e0e2e6; border-radius:12px; overflow:hidden; box-shadow:0 4px 25px rgba(0,0,0,0.06);">
+        
+        <!-- Header -->
         <tr>
-          <td valign="middle" style="padding-right:12px;">
-            <img src="{founder_url}" width="50" height="50" alt="Ajay Tiwari" style="display:block; width:50px; height:50px; border-radius:50%; border:2px solid #E11D48; object-fit:cover;" />
-          </td>
-          <td valign="middle">
-            <p style="margin:0 0 2px 0; font-size:14px; font-weight:800; color:#111827;">Ajay Tiwari</p>
-            <p style="margin:0 0 1px 0; font-size:11px; font-weight:600; color:#E11D48;">Founder</p>
-            <p style="margin:0; font-size:11px; font-weight:700; color:#4B5563;">Nukkad Tech Solutions</p>
+          <td align="center" style="padding:24px; border-bottom:1px solid #e0e2e6; background-color:#ffffff;">
+            <picture>
+              <source srcset="https://nukkadtechsolutions.vercel.app/full-logo.svg" type="image/svg+xml">
+              <img src="{logo_url}" width="220" height="auto" alt="Nukkad Tech Solutions" style="display:block; max-width:220px; height:auto;" />
+            </picture>
           </td>
         </tr>
-        </table>
-      </td>
-      <!-- Contact info -->
-      <td width="35%" valign="middle">
-        <p style="margin:0 0 3px 0; font-size:11px; color:#4B5563; font-weight:600;">✉️ ajay.nukkadtechsolutions@gmail.com</p>
-        <p style="margin:0 0 3px 0; font-size:11px; color:#4B5563; font-weight:600;">📞 +91 93992 50600</p>
-        <p style="margin:0; font-size:11px; color:#4B5563; font-weight:600;">🌐 nukkadtechsolutions.vercel.app</p>
-      </td>
-      <!-- Social -->
-      <td width="25%" valign="middle" align="right">
-        <p style="margin:0 0 6px 0; font-size:11px; font-weight:800; color:#111827;">Let's Connect</p>
-        <a href="https://www.linkedin.com" style="display:inline-block; width:24px; height:24px; border-radius:50%; border:1px solid #D1D5DB; text-align:center; line-height:24px; text-decoration:none; font-size:10px; font-weight:bold; color:#4B5563; margin:0 2px;">in</a>
-        <a href="https://www.instagram.com" style="display:inline-block; width:24px; height:24px; border-radius:50%; border:1px solid #D1D5DB; text-align:center; line-height:24px; text-decoration:none; font-size:10px; font-weight:bold; color:#4B5563; margin:0 2px;">ig</a>
-        <a href="https://www.youtube.com" style="display:inline-block; width:24px; height:24px; border-radius:50%; border:1px solid #D1D5DB; text-align:center; line-height:24px; text-decoration:none; font-size:10px; font-weight:bold; color:#4B5563; margin:0 2px;">yt</a>
-        <a href="https://wa.me/919399250600" style="display:inline-block; width:24px; height:24px; border-radius:50%; border:1px solid #D1D5DB; text-align:center; line-height:24px; text-decoration:none; font-size:10px; font-weight:bold; color:#4B5563; margin:0 2px;">wa</a>
-      </td>
-    </tr>
-    </table>
-  </td></tr>
-
-  <!-- Copyright -->
-  <tr><td style="background-color:#111827; padding:14px 30px; text-align:center; font-size:11px; color:#9CA3AF; font-weight:500;">
-    &copy; 2025 <span style="color:#E11D48; font-weight:700;">Nukkad Tech Solutions</span>. All rights reserved.
-  </td></tr>
-
+        
+        <!-- Body Content -->
+        <tr>
+          <td style="padding:32px 24px;">
+            <!-- Greeting -->
+            <h2 style="font-family:'Sora', sans-serif; font-size:24px; font-weight:600; color:#111827; margin:0 0 24px 0;">Hi <b>{display_name}</b>,</h2>
+            
+            <!-- Hero Section -->
+            <div style="margin-bottom:48px;">
+              <h1 style="font-family:'Sora', sans-serif; font-size:32px; font-weight:600; color:#111827; margin:0 0 12px 0; line-height:1.3;">Your AI Strategy for Growth</h1>
+              <p style="font-family:'Inter', sans-serif; font-size:16px; line-height:1.6; color:#4b5563; margin:0 0 24px 0;">
+                {pitch_text}
+              </p>
+              <img src="{ai_phone_url}" alt="AI Strategy Visualization" width="100%" style="width:100%; height:auto; border-radius:8px; display:block; border:1px solid #e0e2e6;" />
+            </div>
+            
+            <!-- Metrics Strip -->
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#191c1f; border-radius:8px; margin-bottom:48px;">
+              <tr>
+                <td style="padding:24px; text-align:center;">
+                  <p style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#fff6f5; margin:0 0 4px 0; text-transform:uppercase; letter-spacing:0.05em;">Potential ROI</p>
+                  <p style="font-family:'Sora', sans-serif; font-size:40px; font-weight:700; color:#dc2626; margin:0 0 4px 0;">70%</p>
+                  <p style="font-family:'Inter', sans-serif; font-size:14px; color:#e0e2e6; margin:0;">{callout_text}</p>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- Solutions Grid Section -->
+            <h3 style="font-family:'Sora', sans-serif; font-size:24px; font-weight:600; color:#111827; margin:0 0 24px 0; text-align:center;">Our Core Solutions</h3>
+            
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+              <tr>
+                <!-- Col 1 -->
+                <td width="50%" valign="top" style="padding-right:12px; padding-bottom:24px;">
+                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
+                    <div style="font-size:24px; margin-bottom:12px;">📞</div>
+                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Voice AI Agents</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Autonomous inbound & outbound calling agents that handle sales and support 24/7.</p>
+                  </div>
+                </td>
+                <!-- Col 2 -->
+                <td width="50%" valign="top" style="padding-left:12px; padding-bottom:24px;">
+                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
+                    <div style="font-size:24px; margin-bottom:12px;">💬</div>
+                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">WhatsApp CRM</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">AI-powered WhatsApp bots that resolve inquiries, book meetings, and update CRMs.</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <!-- Col 3 -->
+                <td width="50%" valign="top" style="padding-right:12px;">
+                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
+                    <div style="font-size:24px; margin-bottom:12px;">🤖</div>
+                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Chat Agents</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Intelligent website chatbots trained directly on your business docs.</p>
+                  </div>
+                </td>
+                <!-- Col 4 -->
+                <td width="50%" valign="top" style="padding-left:12px;">
+                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
+                    <div style="font-size:24px; margin-bottom:12px;">⚙️</div>
+                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Workflow Auto</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Automate business notifications, approvals, and data sync between siloed apps.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- CTA Section -->
+            <div style="text-align:center; margin-top:40px;">
+              <a href="https://nukkadtechsolutions.vercel.app/" style="display:inline-block; background-color:#dc2626; color:#ffffff; border-radius:8px; padding:12px 24px; font-family:'Inter', sans-serif; font-size:14px; font-weight:600; text-decoration:none;">
+                Book a Demo
+              </a>
+            </div>
+          </td>
+        </tr>
+        
+        <!-- Footer -->
+        <tr>
+          <td align="center" style="background-color:#2d3134; padding:48px 24px; text-align:center;">
+            <div style="font-family:'Sora', sans-serif; font-size:20px; font-weight:700; color:#ffffff; margin-bottom:12px;">
+              Nukkad Tech Solutions
+            </div>
+            <div style="font-family:'Inter', sans-serif; font-size:14px; color:#e0e2e6; opacity:0.8; margin-bottom:24px;">
+              © 2026 Nukkad Tech Solutions. All rights reserved.
+            </div>
+            <div style="font-family:'Inter', sans-serif; font-size:12px;">
+              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Unsubscribe</a> | 
+              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Privacy Policy</a> | 
+              <a href="mailto:ajay.nukkadtechsolutions@gmail.com" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Contact Us</a>
+            </div>
+          </td>
+        </tr>
+        
+      </table>
+    </td>
+  </tr>
 </table>
-</td></tr>
-</table>
-
 </body>
 </html>"""
 
