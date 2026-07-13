@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def get_product_details(query: str) -> str:
     """
     Queries the product knowledge base for details.
-    Examples of queries: 'fees', 'duration', 'curriculum', 'GPU requirements'.
+    Examples of queries: 'fees', 'duration', 'curriculum', 'GPU requirements', 'pricing'.
     """
     logger.info(f"Triggering product tool with query: {query}")
     kb = load_kb()
@@ -19,9 +19,9 @@ def get_product_details(query: str) -> str:
     query_lower = query.lower()
     
     # 1. Check Fees & Price
-    if any(k in query_lower for k in ("fees", "price", "cost", "emi", "charge", "payment")):
+    if any(k in query_lower for k in ("fees", "price", "cost", "emi", "charge", "payment", "pricing")):
         objection_cost = kb.get("objections", {}).get("cost_price", {}).get("response", "")
-        return f"Course fees: INR 14,999 combined. Details: {objection_cost}"
+        return f"Pricing/fees details: INR 14,999 combined. Details: {objection_cost}"
         
     # 2. Check GPU/Hardware requirements
     if any(k in query_lower for k in ("gpu", "graphics card", "hardware", "laptop", "pc", "computer")):
@@ -33,10 +33,12 @@ def get_product_details(query: str) -> str:
         objection_diff = kb.get("objections", {}).get("difficult_for_beginners", {}).get("response", "")
         return f"Difficulty level: {objection_diff}"
         
-    # Default info return
-    courses = kb.get("courses", [])
-    courses_summary = []
-    for c in courses:
-        courses_summary.append(f"- {c.get('name')}: {c.get('why_it_matters')}")
-        
-    return "Course Summary:\n" + "\n".join(courses_summary)
+    # Default info return: Nukkad Tech Solutions services instead of Course Summary
+    services = [
+        "- WhatsApp AI Automation: Automated customer support and lead nurturing bots.",
+        "- Voice AI Agents: Real-time human-like voice agents for inbound and outbound calling.",
+        "- Web & App Development: Custom full-stack web and mobile application development.",
+        "- Social Media Automation: Automatic post scheduling and lead generation tools."
+    ]
+    return "Services and Products offered by Nukkad Tech Solutions:\n" + "\n".join(services)
+

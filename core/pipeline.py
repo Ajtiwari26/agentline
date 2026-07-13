@@ -195,6 +195,7 @@ class VoicePipeline:
         self.is_speaking = False
         self.barge_in_threshold_db = -40.0  # Lowered: phone audio is much quieter than direct mic
         self.audio_packet_count = 0  # Counter for periodic dB diagnostic logging
+        self._reconnecting = False  # Avoid concurrent reconnection triggers
         
         self.exit_stack = AsyncExitStack()
         self.session = None  # Gemini Live session handle
@@ -331,16 +332,24 @@ class VoicePipeline:
             pcm_16k = resample_8k_to_16k(pcm_8k_bytes)
             
             # Send raw audio to Gemini Live session
-            await self.session.send(
-                input=types.LiveClientRealtimeInput(
-                    media_chunks=[types.Blob(
-                        data=pcm_16k,
-                        mime_type="audio/pcm;rate=16000"
-                    )]
+            if self.session:
+                await self.session.send(
+                    input=types.LiveClientRealtimeInput(
+                        media_chunks=[types.Blob(
+                            data=pcm_16k,
+                            mime_type="audio/pcm;rate=16000"
+                        )]
+                    )
                 )
-            )
         except Exception as e:
             logger.error(f"Error sending audio to Gemini Live: {e}")
+            # If the session is closed/unavailable, trigger automatic reconnection in the background
+            if self.active and not self._reconnecting:
+                self._reconnecting = True
+                async def _run_reconnect():
+                    await self.reconnect_gemini()
+                    self._reconnecting = False
+                asyncio.create_task(_run_reconnect())
 
     async def _receive_loop(self):
         """Background task: receives audio chunks and tool calls from Gemini Live."""
@@ -423,6 +432,13 @@ class VoicePipeline:
             pass
         except Exception as e:
             logger.error(f"Error in Gemini Live receiver: {e}")
+            # If the loop ended due to a disconnection error and we are still active, trigger reconnect
+            if self.active and not self._reconnecting:
+                self._reconnecting = True
+                async def _run_reconnect():
+                    await self.reconnect_gemini()
+                    self._reconnecting = False
+                asyncio.create_task(_run_reconnect())
         logger.info("Gemini Live receiver loop ended.")
 
     async def _handle_tool_calls(self, tool_call):
@@ -507,6 +523,95 @@ class VoicePipeline:
             logger.info("Tool responses sent back to Gemini Live session.")
         except Exception as e:
             logger.error(f"Error sending tool response to Gemini Live: {e}")
+
+    async def reconnect_gemini(self):
+        """Attempts to reconnect to Gemini Live and restore context upon session drop."""
+        if not self.active:
+            return False
+            
+        logger.warning("Abrupt session disconnection detected. Attempting to reconnect to Gemini Live API...")
+        
+        # 1. Gracefully stop receiver task and close old exit stack
+        try:
+            if self.receiver_task:
+                self.receiver_task.cancel()
+        except Exception as e:
+            logger.error(f"Error canceling receiver task: {e}")
+            
+        try:
+            await self.exit_stack.aclose()
+        except Exception as e:
+            logger.error(f"Error closing exit stack during reconnect: {e}")
+            
+        # Re-initialize Stack
+        self.exit_stack = AsyncExitStack()
+        self.session = None
+        
+        # 2. Re-establish connection config
+        import config
+        live_config = types.LiveConnectConfig(
+            response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=getattr(config, "GEMINI_LIVE_VOICE", "Charon"))
+                )
+            ),
+            realtime_input_config=types.RealtimeInputConfig(
+                automatic_activity_detection=types.AutomaticActivityDetection(
+                    disabled=False,
+                    start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                    end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_LOW,
+                    prefix_padding_ms=200,
+                    silence_duration_ms=500,
+                )
+            ),
+            system_instruction=types.Content(
+                parts=[types.Part.from_text(text=self.system_prompt)]
+            ),
+            tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
+        )
+        
+        # 3. Connection attempt loop
+        for attempt in range(3):
+            try:
+                logger.info(f"Reconnecting to Gemini Live (Attempt {attempt+1}/3)...")
+                self.session = await self.exit_stack.enter_async_context(
+                    self.client.aio.live.connect(
+                        model=self.model_name,
+                        config=live_config
+                    )
+                )
+                logger.info("Successfully reconnected to Gemini Live session!")
+                
+                # Restart receiver task
+                self.receiver_task = asyncio.create_task(self._receive_loop())
+                
+                # 4. Inject transcript log history to preserve agent context
+                if self.transcript_log:
+                    logger.info("Injecting previous conversation history into new session...")
+                    convo_history = "Here is the conversation history so far. Resume naturally from where we left off:\n"
+                    for turn in self.transcript_log:
+                        sender = turn.get("sender", "unknown").upper()
+                        text = turn.get("text", "")
+                        convo_history += f"{sender}: {text}\n"
+                        
+                    await self.session.send(
+                        input=types.LiveClientContent(
+                            turns=[types.Content(
+                                role="user",
+                                parts=[types.Part.from_text(text=convo_history)]
+                            )],
+                            turn_complete=True
+                        )
+                    )
+                return True
+            except Exception as e:
+                logger.error(f"Reconnection attempt {attempt+1} failed: {e}")
+                await asyncio.sleep(2)
+                
+        logger.error("All 3 reconnection attempts to Gemini Live failed. Closing voice pipeline.")
+        self.active = False
+        return False
 
     async def close(self):
         """Cleans up the pipeline and Gemini Live session."""
