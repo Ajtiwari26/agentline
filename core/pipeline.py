@@ -52,11 +52,11 @@ TOOL_HANDLERS = {
 TOOL_DECLARATIONS = [
     types.FunctionDeclaration(
         name="send_email",
-        description="Sends a template-based email to the user (e.g. syllabus, pricing, course brochures).",
+        description="Sends a template-based email to the user. CRITICAL: You must NEVER call this tool until the user has explicitly confirmed their email address is correct via the email confirmation protocol. If you just heard a new email, speak it back first and wait for the user to say 'yes' before calling this tool.",
         parameters=types.Schema(
             type="OBJECT",
             properties={
-                "to_email": types.Schema(type="STRING", description="The recipient email address."),
+                "to_email": types.Schema(type="STRING", description="The recipient email address. Must be verbally confirmed first."),
                 "template_name": types.Schema(type="STRING", description="The name of the template ('syllabus' or 'pricing'). Defaults to 'syllabus'."),
             },
             required=["to_email"],
