@@ -208,11 +208,7 @@ class VoicePipeline:
             welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
         elif self.direction == "inbound":
             # For inbound calls, use a receptive welcome greeting
-            try:
-                import config
-                agent_mode = getattr(config, "AGENT_MODE", "portfolio")
-            except ImportError:
-                agent_mode = "portfolio"
+            agent_mode = getattr(config, "AGENT_MODE", "portfolio")
             if agent_mode == "portfolio":
                 welcome_text = "Hey! Nukkad Tech Solutions mein aapka swagat hai. Main Ajay hoon. Bataiye, kaise madad kar sakta hoon?"
             else:
