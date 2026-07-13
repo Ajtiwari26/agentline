@@ -186,14 +186,15 @@ class VoicePipeline:
         self.gate_open = False
         self.gate_hold_counter = 0
         self.gate_hold_limit = 12  # Hold for 12 chunks (12 * 20ms = 240ms)
-        self.open_threshold_db = -40.0
-        self.close_threshold_db = -45.0
+        self.open_threshold_db = -55.0   # Lowered: phone audio is heavily compressed/attenuated
+        self.close_threshold_db = -60.0
         
         # Echo Prevention: Mic Gate state
         # When the agent is speaking, we mute incoming audio to prevent echo.
         # Only audio louder than barge_in_threshold_db breaks through (real human interruption).
         self.is_speaking = False
-        self.barge_in_threshold_db = -25.0  # Only very loud audio (real speech) can interrupt
+        self.barge_in_threshold_db = -40.0  # Lowered: phone audio is much quieter than direct mic
+        self.audio_packet_count = 0  # Counter for periodic dB diagnostic logging
         
         self.exit_stack = AsyncExitStack()
         self.session = None  # Gemini Live session handle
@@ -293,6 +294,12 @@ class VoicePipeline:
             sum_squares = sum(float(s) * s for s in samples)
             rms = math.sqrt(sum_squares / len(samples))
             db = 20 * math.log10(rms / 32768.0) if rms > 0 else -100.0
+        
+        # ── DIAGNOSTIC: Log dB levels every 50 packets so we can calibrate thresholds ──
+        self.audio_packet_count += 1
+        if self.audio_packet_count % 50 == 0:
+            gate_status = "SPEAKING_GATE" if self.is_speaking else ("LISTENING_OPEN" if self.gate_open else "LISTENING_GATED")
+            logger.info(f"Audio dB: {db:.1f} | State: {gate_status} | is_speaking={self.is_speaking} | Pkt#{self.audio_packet_count}")
         
         # ── SMART MIC GATE (Echo Prevention) ──
         # While the agent is speaking, the phone mic picks up the agent's own voice
