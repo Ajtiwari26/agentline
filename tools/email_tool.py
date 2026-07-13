@@ -140,7 +140,10 @@ def _build_portfolio_html(lead_name: str, pitch_text: str, callout_text: str) ->
        HEADER: Logo
        ═══════════════════════════════════════════════ -->
   <tr><td style="padding:25px 30px 0 30px; background-color:#ffffff;">
-    <img src="{logo_url}" width="220" height="auto" alt="Nukkad Tech Solutions" style="display:block; max-width:220px; height:auto;" />
+    <picture>
+      <source srcset="https://nukkadtechsolutions.vercel.app/full-logo.svg" type="image/svg+xml">
+      <img src="{logo_url}" width="220" height="auto" alt="Nukkad Tech Solutions" style="display:block; max-width:220px; height:auto;" />
+    </picture>
   </td></tr>
 
   <!-- ═══════════════════════════════════════════════
