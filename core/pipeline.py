@@ -260,6 +260,11 @@ class VoicePipeline:
             
             # Send the welcome message to trigger Gemini to speak first
             if welcome_text:
+                if self.direction == "outbound":
+                    # Wait 1.5 seconds to allow the carrier phone line to fully connect the audio path
+                    logger.info("Outbound call: waiting 1.5 seconds for audio path to bridge before sending greeting...")
+                    await asyncio.sleep(1.5)
+                
                 direction_context = "You just called this person." if self.direction == "outbound" else "This person just called you."
                 logger.info(f"Sending {self.direction} welcome prompt to Gemini Live: '{welcome_text}'")
                 self.transcript_log.append({"sender": "assistant", "text": welcome_text})
@@ -281,7 +286,7 @@ class VoicePipeline:
             self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz PCM from Exotel, applies smart mic gate + noise filtering, resamples, and sends to Gemini Live."""
+        """Receives 8kHz PCM from Exotel, applies smart mic gate, resamples, and sends to Gemini Live."""
         if not self.active or not self.session:
             return
             
@@ -298,7 +303,7 @@ class VoicePipeline:
         # ── DIAGNOSTIC: Log dB levels every 50 packets so we can calibrate thresholds ──
         self.audio_packet_count += 1
         if self.audio_packet_count % 50 == 0:
-            gate_status = "SPEAKING_GATE" if self.is_speaking else ("LISTENING_OPEN" if self.gate_open else "LISTENING_GATED")
+            gate_status = "SPEAKING_GATE" if self.is_speaking else "LISTENING_OPEN"
             logger.info(f"Audio dB: {db:.1f} | State: {gate_status} | is_speaking={self.is_speaking} | Pkt#{self.audio_packet_count}")
         
         # ── SMART MIC GATE (Echo Prevention) ──
@@ -313,24 +318,13 @@ class VoicePipeline:
                 # Audio is too quiet — likely echo from the agent's own voice. Drop it.
                 return
             else:
-                # Audio is loud enough to be a real human interruption. Let it through.
-                logger.info(f"Barge-in detected while agent speaking (dB: {db:.1f}). Allowing audio through.")
-        
-        # ── NOISE GATE (Background Noise Filtering) ──
-        # When the agent is NOT speaking (listening mode), apply noise gate
-        # to filter low-level background noise that could trigger Gemini's VAD.
-        if not self.is_speaking:
-            if db >= self.open_threshold_db:
-                self.gate_open = True
-                self.gate_hold_counter = self.gate_hold_limit
-            else:
-                if self.gate_open:
-                    self.gate_hold_counter -= 1
-                    if self.gate_hold_counter <= 0:
-                        self.gate_open = False
-            
-            if not self.gate_open:
-                return
+                # Audio is loud enough to be a real human interruption. Let it through
+                # and transition the state immediately to listening so further chunks pass.
+                logger.info(f"Barge-in detected while agent speaking (dB: {db:.1f}). Disabling speaking gate.")
+                self.is_speaking = False
+                self.interrupted = True
+                # Send clear command to Exotel to flush its playback buffer
+                await self.send_audio_callback(b"CLEAR_STREAM")
             
         try:
             # Resample 8kHz → 16kHz for Gemini Live input
