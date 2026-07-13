@@ -189,6 +189,12 @@ class VoicePipeline:
         self.open_threshold_db = -40.0
         self.close_threshold_db = -45.0
         
+        # Echo Prevention: Mic Gate state
+        # When the agent is speaking, we mute incoming audio to prevent echo.
+        # Only audio louder than barge_in_threshold_db breaks through (real human interruption).
+        self.is_speaking = False
+        self.barge_in_threshold_db = -25.0  # Only very loud audio (real speech) can interrupt
+        
         self.exit_stack = AsyncExitStack()
         self.session = None  # Gemini Live session handle
         self.receiver_task = None
@@ -220,6 +226,16 @@ class VoicePipeline:
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=getattr(config, "GEMINI_LIVE_VOICE", "Charon"))
+                )
+            ),
+            # VAD tuning to reduce echo-triggered self-interruptions
+            realtime_input_config=types.RealtimeInputConfig(
+                automatic_activity_detection=types.AutomaticActivityDetection(
+                    disabled=False,
+                    start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                    end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_LOW,
+                    prefix_padding_ms=200,   # Ignore first 200ms of audio onset (catches most echo)
+                    silence_duration_ms=500,  # Require 500ms silence to end a turn
                 )
             ),
             system_instruction=types.Content(
@@ -264,7 +280,7 @@ class VoicePipeline:
             self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz PCM from Exotel, applies noise gate filtering, resamples, and sends to Gemini Live."""
+        """Receives 8kHz PCM from Exotel, applies smart mic gate + noise filtering, resamples, and sends to Gemini Live."""
         if not self.active or not self.session:
             return
             
@@ -277,21 +293,37 @@ class VoicePipeline:
             sum_squares = sum(float(s) * s for s in samples)
             rms = math.sqrt(sum_squares / len(samples))
             db = 20 * math.log10(rms / 32768.0) if rms > 0 else -100.0
+        
+        # ── SMART MIC GATE (Echo Prevention) ──
+        # While the agent is speaking, the phone mic picks up the agent's own voice
+        # and Exotel sends it back to us. We MUST drop this echoed audio to prevent
+        # Gemini from thinking the user is talking and interrupting itself.
+        # 
+        # However, we still allow genuinely LOUD audio through (a real human interruption)
+        # so the user can still barge-in by speaking over the agent.
+        if self.is_speaking:
+            if db < self.barge_in_threshold_db:
+                # Audio is too quiet — likely echo from the agent's own voice. Drop it.
+                return
+            else:
+                # Audio is loud enough to be a real human interruption. Let it through.
+                logger.info(f"Barge-in detected while agent speaking (dB: {db:.1f}). Allowing audio through.")
+        
+        # ── NOISE GATE (Background Noise Filtering) ──
+        # When the agent is NOT speaking (listening mode), apply noise gate
+        # to filter low-level background noise that could trigger Gemini's VAD.
+        if not self.is_speaking:
+            if db >= self.open_threshold_db:
+                self.gate_open = True
+                self.gate_hold_counter = self.gate_hold_limit
+            else:
+                if self.gate_open:
+                    self.gate_hold_counter -= 1
+                    if self.gate_hold_counter <= 0:
+                        self.gate_open = False
             
-        # Noise Gate Hysteresis evaluation
-        if db >= self.open_threshold_db:
-            self.gate_open = True
-            self.gate_hold_counter = self.gate_hold_limit
-        else:
-            if self.gate_open:
-                self.gate_hold_counter -= 1
-                if self.gate_hold_counter <= 0:
-                    self.gate_open = False
-                    
-        # Discard quiet chunks to prevent minor background noises from triggering Gemini VAD interruptions
-        # Temporarily bypassed to resolve greeting response latency
-        # if not self.gate_open:
-        #     return
+            if not self.gate_open:
+                return
             
         try:
             # Resample 8kHz → 16kHz for Gemini Live input
@@ -333,6 +365,7 @@ class VoicePipeline:
                             if sc.interrupted:
                                 logger.info("Gemini Live session was interrupted by user voice.")
                                 self.interrupted = True
+                                self.is_speaking = False  # Agent stopped speaking due to interruption
                                 # Send clear command to Exotel to flush its playback buffer
                                 await self.send_audio_callback(b"CLEAR_STREAM")
                                 continue
@@ -340,6 +373,7 @@ class VoicePipeline:
                             # Reset interruption flag on new model content
                             if sc.model_turn:
                                 self.interrupted = False
+                                self.is_speaking = True  # Agent is now generating/speaking audio
                                 
                             if self.interrupted:
                                 # Discard any leftover packets if we are interrupted
@@ -371,6 +405,7 @@ class VoicePipeline:
                             # Check if the model finished its turn
                             if sc.turn_complete:
                                 logger.info("Gemini Live turn complete.")
+                                self.is_speaking = False  # Agent finished speaking, now listening
                         
                         # Handle tool calls from Gemini
                         if response.tool_call:
