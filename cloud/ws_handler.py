@@ -60,11 +60,16 @@ async def handle_exotel_websocket(websocket: WebSocket):
 
     try:
         while True:
-            # Wait for message from Exotel
-            message_text = await websocket.receive_text()
+            # Wait for message from Exotel (with timeout to detect dead connections)
+            try:
+                message_text = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+            except asyncio.TimeoutError:
+                logger.warning(f"No data received for 60s on stream {stream_sid}. Closing stale connection.")
+                break
             data = json.loads(message_text)
             event = data.get("event")
-            logger.info(f"Received WebSocket event from Exotel: {event}. Raw payload: {data}")
+            if event != "media":
+                logger.info(f"Received WebSocket event from Exotel: {event}. Raw payload: {data}")
             
             if event == "start":
                 stream_sid = data.get("stream_sid") or data.get("streamSid")
@@ -75,6 +80,7 @@ async def handle_exotel_websocket(websocket: WebSocket):
                     data.get("start", {}).get("from") or 
                     query_phone or 
                     data.get("start", {}).get("customParameters", {}).get("phone") or 
+                    data.get("start", {}).get("custom_parameters", {}).get("phone") or 
                     "+919999999999"
                 )
                 logger.info(f"Resolved caller phone number: {caller_phone}")
@@ -86,10 +92,18 @@ async def handle_exotel_websocket(websocket: WebSocket):
                 )
                 logger.info(f"Resolved Call SID from start event: {call_sid}")
                 
+                # Resolve the call direction from query params or custom parameters (snake_case/camelCase)
+                resolved_direction = (
+                    data.get("start", {}).get("customParameters", {}).get("direction") or
+                    data.get("start", {}).get("custom_parameters", {}).get("direction") or
+                    query_direction
+                )
+                logger.info(f"Resolved call direction: {resolved_direction}")
+                
                 # Use the actual direction from query params (auto-detected in server.py)
                 pipeline = VoicePipeline(
                     phone=caller_phone, 
-                    direction=query_direction, 
+                    direction=resolved_direction, 
                     send_audio_callback=send_audio_callback,
                     call_sid=call_sid
                 )
