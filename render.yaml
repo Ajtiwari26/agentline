@@ -10,7 +10,13 @@ services:
       - key: COURSEWALLAH
         value: "false"
       - key: NUKKAD
-        value: "true"
+        value: "false"
+      - key: COMPANY
+        value: "bla_bli_blu"
+      - key: GEMINI_LIVE_VOICE
+        value: "Aoede"
+      - key: AGENT_NAME
+        value: "Kavya"
       - key: GEMINI_API_KEY
         sync: false
       - key: EXOTEL_API_KEY
