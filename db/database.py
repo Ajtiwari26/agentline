@@ -116,9 +116,16 @@ def add_conversation(
             "timestamp": turn.get("timestamp", datetime.utcnow())
         })
         
+    # Look up lead name dynamically from the database
+    lead_name = None
+    lead_doc = get_lead(phone)
+    if lead_doc and "name" in lead_doc:
+        lead_name = lead_doc["name"]
+
     convo = {
         "call_id": call_id,
         "phone": phone,
+        "lead_name": lead_name,
         "transcript": formatted_transcript,
         "duration_seconds": duration_seconds,
         "mode": mode,
