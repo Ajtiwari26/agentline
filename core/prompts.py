@@ -32,6 +32,12 @@ NUKKAD_KNOWLEDGE_BASE = {
 }
 
 def load_kb():
+    import config
+    company = getattr(config, "COMPANY", "nukkad").lower()
+    if company == "bla_bli_blu":
+        from core import bla_bli_blu_prompts
+        return bla_bli_blu_prompts.load_kb()
+
     # Look for knowledge_base.json first
     kb_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app/knowledge_base.json")
     if os.path.exists(kb_path):
@@ -44,8 +50,14 @@ def load_kb():
     return NUKKAD_KNOWLEDGE_BASE
 
 def build_system_prompt(lead_info=None, direction="outbound"):
+    import config
+    company = getattr(config, "COMPANY", "nukkad").lower()
+    if company == "bla_bli_blu":
+        from core import bla_bli_blu_prompts
+        return bla_bli_blu_prompts.build_system_prompt(lead_info, direction)
+
     kb = load_kb()
-    agent_name = kb.get("system", {}).get("agent_name", "Ajay")
+    agent_name = getattr(config, "AGENT_NAME", kb.get("system", {}).get("agent_name", "Ajay"))
     brand_name = kb.get("system", {}).get("brand_name", "Nukkad Tech Solutions")
     persona = kb.get("system", {}).get("persona", "")
     
@@ -125,7 +137,7 @@ CONTEXT: This is an OUTBOUND call — YOU are calling the customer to introduce 
 
 Your task is to talk to a representative/owner of a company in Bhopal to introduce Nukkad Tech Solutions and close a deal or schedule a callback.
 Follow this structured conversation flow but keep it casual, natural, and highly responsive:
-1. GREETING & ICE-BREAKER: Greet the lead. If you know the company name from the LEAD CONTEXT below, refer to it naturally (e.g., "Hey! Ajay here from Nukkad Tech Solutions. Kaise ho aap?"). STOP and wait for them to respond. Do NOT dump details yet.
+1. GREETING & ICE-BREAKER: Greet the lead. If you know the company name from the LEAD CONTEXT below, refer to it naturally (e.g., "Hey! {agent_name} here from Nukkad Tech Solutions. Kaise ho aap?"). STOP and wait for them to respond. Do NOT dump details yet.
 2. INTRODUCE DEMO CONTEXT: After they greet you back, explain that you are calling using your self-developed AI voice agent (AgentLine) to show them a real-time demonstration of what your AI voice agents can do.
    * DYNAMIC INQUIRY RULE:
      - If the company name is already known from the LEAD CONTEXT below (e.g., FIITJEE Bhopal), do NOT ask "Aapka kya business hai?". Instead, acknowledge their industry and directly ask how they manage their customer support/operations (e.g., "Mujhe pata hai aap log coaching aur education sector mein ho, toh abhi aap log student inquiries aur parent support call loops kaise manage kar rahe ho?").
@@ -144,7 +156,7 @@ Follow this structured conversation flow but keep it casual, natural, and highly
    - Pitch these use cases one-by-one or in short, engaging turns (1-2 sentences max). Do not dump them all at once.
 6. OBJECTIONS & DETAILS: Resolve any doubts/objections (such as cost, trust in AI, or current setups) first before pushing for email/callback.
 7. CLOSING & ACTION: If they are interested:
-   - Offer to schedule a follow-up callback or deep-dive call with you (Ajay) or your team so they can discuss their requirements directly. Call the schedule_callback tool.
+   - Offer to schedule a follow-up callback or deep-dive call with you ({agent_name}) or your team so they can discuss their requirements directly. Call the schedule_callback tool.
    - Offer to send our portfolio and list of projects we have done to their email address. Call the send_email tool (using the 'portfolio' template).
    - Call log_lead_interest to save their feedback/responses in the database at the end of the call or when they show interest. Do NOT call this tool at the very beginning of the call before greeting the customer.
 

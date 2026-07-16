@@ -177,7 +177,7 @@ class VoicePipeline:
         
         # Determine the model name dynamically (Vertex AI vs AI Studio Live API)
         is_vertex = sa_key_path and os.path.exists(sa_key_path)
-        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash-exp"
+        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash"
         self.summary_model_name = "gemini-2.5-flash" if is_vertex else "gemini-1.5-flash"
         logger.info(f"Using Gemini Live model: {self.model_name}, Summary model: {self.summary_model_name}")
         
@@ -211,23 +211,40 @@ class VoicePipeline:
         
         # Load welcome text based on call direction
         welcome_text = None
-        if self.direction == "outbound":
-            kb = load_kb()
-            welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
-        elif self.direction == "inbound":
-            # For inbound calls, use a receptive welcome greeting
-            agent_mode = getattr(config, "AGENT_MODE", "portfolio")
-            if agent_mode == "portfolio":
-                welcome_text = "Hey! Nukkad Tech Solutions mein aapka swagat hai. Main Ajay hoon. Bataiye, kaise madad kar sakta hoon?"
-            else:
-                welcome_text = "Hey! CourseWallah mein welcome hai yaar. Main Ajay hoon. Bolo, kya jaanna hai?"
+        kb = load_kb()
+        company = getattr(config, "COMPANY", "nukkad").lower()
+        agent_name = getattr(config, "AGENT_NAME", "Ajay")
         
+        if self.direction == "outbound":
+            welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", f"Hey! {agent_name} here from Nukkad Tech Solutions. Kaise ho aap?")
+            welcome_text = welcome_text.replace("Ajay", agent_name)
+        elif self.direction == "inbound":
+            # For inbound calls, use a receptive welcome greeting based on active company
+            if company == "bla_bli_blu":
+                agent_name_val = kb.get("system", {}).get("agent_name", "Kavya")
+                brand_name = kb.get("system", {}).get("brand_name", "Bla Bli Blu")
+                welcome_text = f"Hey! {brand_name} mein aapka swagat hai. Main {agent_name_val} hoon. Bataiye, kaise madad kar sakti hoon?"
+            else:
+                agent_mode = getattr(config, "AGENT_MODE", "portfolio")
+                if agent_mode == "portfolio":
+                    welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar sakta hoon?"
+                else:
+                    welcome_text = f"Hey! CourseWallah mein welcome hai yaar. Main {agent_name} hoon. Bolo, kya jaanna hai?"
+        
+        # Determine voice name dynamically (default to female Aoede for Kavya/Bla Bli Blu, Charon otherwise)
+        env_voice = getattr(config, "GEMINI_LIVE_VOICE", None)
+        if company == "bla_bli_blu" or kb.get("system", {}).get("agent_name", "").lower() == "kavya":
+            voice_name = env_voice if env_voice and env_voice != "Charon" else "Aoede"
+        else:
+            voice_name = env_voice or "Charon"
+        logger.info(f"Resolved Gemini Live voice: {voice_name}")
+
         # Configure the Gemini Live session
         live_config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=getattr(config, "GEMINI_LIVE_VOICE", "Charon"))
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
                 )
             ),
             # VAD tuning to reduce echo-triggered self-interruptions
