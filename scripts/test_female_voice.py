@@ -13,21 +13,19 @@ class TestFemaleVoiceAndAgentConfig(unittest.TestCase):
         """Verify that environment variables are correctly loaded for the female voice and name."""
         self.assertEqual(config.AGENT_NAME, "Kavya", "AGENT_NAME should be configured as 'Kavya'")
         self.assertEqual(config.GEMINI_LIVE_VOICE, "Aoede", "GEMINI_LIVE_VOICE should be configured as 'Aoede'")
-        self.assertEqual(config.COMPANY, "bla_bli_blu", "COMPANY should be configured as 'bla_bli_blu'")
+        self.assertEqual(config.COMPANY, "nukkad", "COMPANY should be configured as 'nukkad'")
         
     def test_knowledge_base_loading(self):
-        """Verify that load_kb loads the Bla Bli Blu knowledge base."""
+        """Verify that load_kb loads the Nukkad Tech Solutions knowledge base."""
         kb = prompts.load_kb()
         brand_name = kb.get("system", {}).get("brand_name")
-        agent_name = kb.get("system", {}).get("agent_name")
-        self.assertEqual(brand_name, "Bla Bli Blu", "Brand name should be Bla Bli Blu")
-        self.assertEqual(agent_name, "Kavya", "Agent name should be Kavya")
+        self.assertEqual(brand_name, "Nukkad Tech Solutions", "Brand name should be Nukkad Tech Solutions")
         
     def test_system_prompt_generation(self):
         """Verify that the system prompt dynamically contains the correct name and brand."""
         sys_prompt = prompts.build_system_prompt(direction="outbound")
         self.assertIn("Kavya", sys_prompt, "System prompt should mention agent name 'Kavya'")
-        self.assertIn("Bla Bli Blu", sys_prompt, "System prompt should mention brand name 'Bla Bli Blu'")
+        self.assertIn("Nukkad Tech Solutions", sys_prompt, "System prompt should mention brand name 'Nukkad Tech Solutions'")
         
     def test_pipeline_voice_resolution(self):
         """Verify that the pipeline resolves the correct prebuilt female voice (Aoede)."""

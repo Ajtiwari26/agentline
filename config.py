@@ -8,7 +8,7 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 COURSEWALLAH = os.getenv("COURSEWALLAH", "false").lower() == "true"
 NUKKAD = os.getenv("NUKKAD", "false").lower() == "true"
-COMPANY = os.getenv("COMPANY", "bla_bli_blu").lower()
+COMPANY = os.getenv("COMPANY", "nukkad").lower()
 
 if COMPANY == "bla_bli_blu":
     AGENT_MODE = "bla_bli_blu"

@@ -227,7 +227,7 @@ class VoicePipeline:
             else:
                 agent_mode = getattr(config, "AGENT_MODE", "portfolio")
                 if agent_mode == "portfolio":
-                    welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar sakta hoon?"
+                    welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
                 else:
                     welcome_text = f"Hey! CourseWallah mein welcome hai yaar. Main {agent_name} hoon. Bolo, kya jaanna hai?"
         

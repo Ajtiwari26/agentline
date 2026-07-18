@@ -10,9 +10,9 @@ services:
       - key: COURSEWALLAH
         value: "false"
       - key: NUKKAD
-        value: "false"
+        value: "true"
       - key: COMPANY
-        value: "bla_bli_blu"
+        value: "nukkad"
       - key: GEMINI_LIVE_VOICE
         value: "Aoede"
       - key: AGENT_NAME
