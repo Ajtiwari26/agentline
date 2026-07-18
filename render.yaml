@@ -15,6 +15,8 @@ services:
         value: "Kavya"
       - key: GEMINI_API_KEY
         sync: false
+      - key: GCP_SERVICE_ACCOUNT_JSON
+        sync: false
       - key: EXOTEL_API_KEY
         sync: false
       - key: EXOTEL_API_TOKEN
