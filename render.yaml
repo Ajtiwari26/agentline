@@ -7,10 +7,6 @@ services:
     envVars:
       - key: PORT
         value: 10000
-      - key: COURSEWALLAH
-        value: "false"
-      - key: NUKKAD
-        value: "true"
       - key: COMPANY
         value: "nukkad"
       - key: GEMINI_LIVE_VOICE
@@ -27,9 +23,6 @@ services:
         sync: false
       - key: SARVAM_API_KEY
         sync: false
-      - key: GROQ_API_KEY
+      - key: MONGO_URI
         sync: false
-      - key: MONGODB_URI
-        sync: false
-      - key: REDIS_URI
-        sync: false
+
