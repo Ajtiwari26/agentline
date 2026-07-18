@@ -231,12 +231,8 @@ class VoicePipeline:
                 else:
                     welcome_text = f"Hey! CourseWallah mein welcome hai yaar. Main {agent_name} hoon. Bolo, kya jaanna hai?"
         
-        # Determine voice name dynamically (default to female Aoede for Kavya/Bla Bli Blu, Charon otherwise)
-        env_voice = getattr(config, "GEMINI_LIVE_VOICE", None)
-        if company == "bla_bli_blu" or kb.get("system", {}).get("agent_name", "").lower() == "kavya":
-            voice_name = env_voice if env_voice and env_voice != "Charon" else "Aoede"
-        else:
-            voice_name = env_voice or "Charon"
+        # Determine voice name directly from GEMINI_LIVE_VOICE config
+        voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Charon")
         logger.info(f"Resolved Gemini Live voice: {voice_name}")
 
         # Configure the Gemini Live session

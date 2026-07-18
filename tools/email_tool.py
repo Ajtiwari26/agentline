@@ -31,18 +31,32 @@ def _generate_personalized_pitch(lead_data: dict) -> dict:
     Uses Gemini 2.5 Flash to generate personalized pitch + callout.
     Falls back to generic values if Gemini fails or no lead data exists.
     """
-    default_pitch = (
-        "Thanks for speaking with our AI voice assistant today! We loved learning about your business. "
-        "Nukkad Tech Solutions can revolutionize your operations by automating crucial "
-        "tasks like lead follow-ups and customer inquiries, ensuring timely engagement with every "
-        "potential client. Our platform can seamlessly manage scheduling, dispatch information "
-        "via WhatsApp and email, and significantly streamline your day-to-day operations."
-    )
-    default_callout = (
-        "This comprehensive automation will not only <b style=\"color:#DC2626;\">save your team valuable time</b> "
-        "and <b style=\"color:#DC2626;\">reduce administrative costs</b>, but also "
-        "<b style=\"color:#DC2626;\">improve lead conversion rates</b>, ultimately boosting your growth and revenue."
-    )
+    import config
+    company = getattr(config, "COMPANY", "nukkad").lower()
+
+    if company == "bla_bli_blu":
+        default_pitch = (
+            "Thanks for speaking with our fragrance consultant Kavya today! We loved discussing your scent preferences. "
+            "At Bla Bli Blu, we craft designer-grade perfumes with a 25% fragrance oil concentration that dry down "
+            "into rich, luxurious notes. Try our Risk-Free Scent Trial discovery packs today and find your signature scent!"
+        )
+        default_callout = (
+            "Get <b style=\"color:#2563EB;\">100% wallet cashback</b> on your discovery pack, making your "
+            "<b style=\"color:#2563EB;\">scent trial absolutely free</b> when you upgrade to a full bottle."
+        )
+    else:
+        default_pitch = (
+            "Thanks for speaking with our AI voice assistant today! We loved learning about your business. "
+            "Nukkad Tech Solutions can revolutionize your operations by automating crucial "
+            "tasks like lead follow-ups and customer inquiries, ensuring timely engagement with every "
+            "potential client. Our platform can seamlessly manage scheduling, dispatch information "
+            "via WhatsApp and email, and significantly streamline your day-to-day operations."
+        )
+        default_callout = (
+            "This comprehensive automation will not only <b style=\"color:#DC2626;\">save your team valuable time</b> "
+            "and <b style=\"color:#DC2626;\">reduce administrative costs</b>, but also "
+            "<b style=\"color:#DC2626;\">improve lead conversion rates</b>, ultimately boosting your growth and revenue."
+        )
 
     result = {"pitch": default_pitch, "callout": default_callout}
 
@@ -72,7 +86,24 @@ def _generate_personalized_pitch(lead_data: dict) -> dict:
         else:
             client = genai.Client(api_key=getattr(config, "GEMINI_API_KEY", ""))
 
-        prompt = f"""You are writing two pieces of text for a personalized business email.
+        if company == "bla_bli_blu":
+            prompt = f"""You are writing two pieces of text for a personalized customer email from a premium fragrance brand.
+
+Lead Name: {name}
+Customer Notes (Scent preferences, review feedback, or interests): {notes}
+Interest Level: {interest}
+
+Generate a JSON object with exactly two keys:
+1. "pitch": Start with "Thanks for speaking with our fragrance consultant Kavya today! We loved discussing your scent preferences." Then 2-3 MORE sentences recommending Bla Bli Blu's trial set, combos, or specific perfume types (like Old Money for office wear, Love Drunk for nights out, By the Beach for fresh wear, or Lights Off for rich sweetness) based on their notes.
+2. "callout": A single impactful sentence about our 100% cashback offer. Include HTML bold+blue tags around 3 key benefit phrases, like: This makes your <b style="color:#2563EB;">scent trial absolutely free</b> by giving you <b style="color:#2563EB;">100% wallet cashback</b> to buy your <b style="color:#2563EB;">signature full-size bottle</b>.
+
+Output ONLY valid JSON. No markdown backticks.
+{{
+  "pitch": "...",
+  "callout": "..."
+}}"""
+        else:
+            prompt = f"""You are writing two pieces of text for a personalized business email.
 
 Lead Name: {name}
 Business Notes: {notes}
@@ -117,6 +148,134 @@ Output ONLY valid JSON. No markdown backticks.
 # Uses hosted images, emoji icons, pure HTML/CSS
 # NO SVGs, NO data: URIs (Gmail strips both)
 # ──────────────────────────────────────────────────
+def _build_blabliblu_email_html(lead_name: str, pitch_text: str, callout_text: str) -> str:
+    logo_url = "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=200"
+    hero_image_url = "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=600"
+    display_name = lead_name if lead_name else "there"
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Discover Bla Bli Blu Fragrances</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f6fa; font-family:'Inter', sans-serif; color:#1e293b; -webkit-font-smoothing:antialiased;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f4f6fa; padding:40px 0;">
+  <tr>
+    <td align="center">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background-color:#ffffff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(15,23,42,0.05);">
+        
+        <!-- Header -->
+        <tr>
+          <td align="center" style="padding:32px 24px; background-color:#0f172a; color:#ffffff;">
+            <h1 style="font-family:'Playfair Display', serif; font-size:36px; font-weight:700; margin:0; letter-spacing:0.05em; color:#3b82f6;">BLA BLA BLU</h1>
+            <p style="font-family:'Inter', sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:0.2em; margin:8px 0 0 0; opacity:0.8;">Luxury French Grade Perfumes</p>
+          </td>
+        </tr>
+        
+        <!-- Body Content -->
+        <tr>
+          <td style="padding:32px 24px;">
+            <!-- Greeting -->
+            <h2 style="font-family:'Playfair Display', serif; font-size:22px; font-weight:600; color:#0f172a; margin:0 0 20px 0;">Dearest {display_name},</h2>
+            
+            <!-- Hero Section -->
+            <div style="margin-bottom:40px;">
+              <p style="font-family:'Inter', sans-serif; font-size:16px; line-height:1.7; color:#475569; margin:0 0 24px 0;">
+                {pitch_text}
+              </p>
+              <img src="{hero_image_url}" alt="Premium Fragrances" width="100%" style="width:100%; height:auto; border-radius:12px; display:block; border:1px solid #e2e8f0;" />
+            </div>
+            
+            <!-- Offer Strip -->
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#eff6ff; border-left:4px solid #2563eb; border-radius:8px; margin-bottom:40px;">
+              <tr>
+                <td style="padding:24px;">
+                  <p style="font-family:'Inter', sans-serif; font-size:13px; font-weight:700; color:#2563eb; margin:0 0 6px 0; text-transform:uppercase; letter-spacing:0.1em;">Risk-Free Scent Trial</p>
+                  <p style="font-family:'Inter', sans-serif; font-size:15px; color:#1e3a8a; margin:0; line-height:1.5;">{callout_text}</p>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- Fragrance Collection Grid -->
+            <h3 style="font-family:'Playfair Display', serif; font-size:24px; font-weight:600; color:#0f172a; margin:0 0 24px 0; text-align:center;">Our Signature Collections</h3>
+            
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
+              <tr>
+                <!-- Col 1 -->
+                <td width="50%" valign="top" style="padding-right:10px; padding-bottom:20px;">
+                  <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; min-height:140px;">
+                    <div style="font-size:20px; margin-bottom:8px;">💼</div>
+                    <h4 style="font-family:'Playfair Display', serif; font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Old Money</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:13px; color:#64748b; margin:0; line-height:1.4;">Crisp green apple, damask rose, cedarwood, tonka. Perfect for executive confidence.</p>
+                  </div>
+                </td>
+                <!-- Col 2 -->
+                <td width="50%" valign="top" style="padding-left:10px; padding-bottom:20px;">
+                  <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; min-height:140px;">
+                    <div style="font-size:20px; margin-bottom:8px;">❤️</div>
+                    <h4 style="font-family:'Playfair Display', serif; font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Love Drunk</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:13px; color:#64748b; margin:0; line-height:1.4;">Warm cinnamon, sweet dates, praline, vanilla. An alluring and romantic statement.</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <!-- Col 3 -->
+                <td width="50%" valign="top" style="padding-right:10px;">
+                  <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; min-height:140px;">
+                    <div style="font-size:20px; margin-bottom:8px;">🌊</div>
+                    <h4 style="font-family:'Playfair Display', serif; font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">By The Beach</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:13px; color:#64748b; margin:0; line-height:1.4;">Fresh lemon, bergamot, crisp apple, aquatic musk. Uplifting and energizing.</p>
+                  </div>
+                </td>
+                <!-- Col 4 -->
+                <td width="50%" valign="top" style="padding-left:10px;">
+                  <div style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; min-height:140px;">
+                    <div style="font-size:20px; margin-bottom:8px;">✨</div>
+                    <h4 style="font-family:'Playfair Display', serif; font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px 0;">Lights Off</h4>
+                    <p style="font-family:'Inter', sans-serif; font-size:13px; color:#64748b; margin:0; line-height:1.4;">Passionfruit, sweet caramel, rich amber. Seductive, sweet, and mysterious.</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- CTA Section -->
+            <div style="text-align:center; margin-top:40px;">
+              <a href="https://blabliblu.in/" style="display:inline-block; background-color:#2563eb; color:#ffffff; border-radius:8px; padding:14px 28px; font-family:'Inter', sans-serif; font-size:14px; font-weight:600; text-decoration:none; box-shadow:0 4px 6px -1px rgba(37,99,235,0.2);">
+                Order Trial Set
+              </a>
+            </div>
+          </td>
+        </tr>
+        
+        <!-- Footer -->
+        <tr>
+          <td align="center" style="background-color:#0f172a; padding:40px 24px; text-align:center;">
+            <div style="font-family:'Playfair Display', serif; font-size:20px; font-weight:700; color:#ffffff; margin-bottom:8px; letter-spacing:0.05em;">
+              Bla Bli Blu Perfumes
+            </div>
+            <div style="font-family:'Inter', sans-serif; font-size:13px; color:#94a3b8; margin-bottom:20px;">
+              © 2026 Bla Bli Blu. All rights reserved.
+            </div>
+            <div style="font-family:'Inter', sans-serif; font-size:12px;">
+              <a href="#" style="color:#3b82f6; text-decoration:none; margin:0 8px;">Unsubscribe</a> | 
+              <a href="#" style="color:#3b82f6; text-decoration:none; margin:0 8px;">Privacy Policy</a> | 
+              <a href="mailto:support@blabliblu.in" style="color:#3b82f6; text-decoration:none; margin:0 8px;">Contact Us</a>
+            </div>
+          </td>
+        </tr>
+        
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""
+
 def _build_portfolio_html(lead_name: str, pitch_text: str, callout_text: str) -> str:
     logo_url = f"{EMAIL_ASSETS_URL}/logo.png"
     ai_phone_url = f"{EMAIL_ASSETS_URL}/ai-phone.png"
@@ -301,8 +460,12 @@ def send_email_via_resend(to_email: str, subject: str, body: str, content_type: 
         "Content-Type": "application/json"
     }
     
-    mode = getattr(config, "AGENT_MODE", "portfolio")
-    sender_name = "Nukkad Tech Solutions" if mode == "portfolio" else "CourseWallah"
+    company = getattr(config, "COMPANY", "nukkad").lower()
+    if company == "bla_bli_blu":
+        sender_name = "Bla Bli Blu"
+    else:
+        mode = getattr(config, "AGENT_MODE", "portfolio")
+        sender_name = "Nukkad Tech Solutions" if mode == "portfolio" else "CourseWallah"
     
     payload = {
         "from": config.EMAIL_FROM or f"{sender_name} <onboarding@resend.dev>",
@@ -356,13 +519,23 @@ def send_template_email(phone: str, to_email: str, template_name: str = "syllabu
     callout_text = personalization["callout"]
     
     lead_name = lead_data.get("name", "") if lead_data else ""
-    html_body = _build_portfolio_html(lead_name, pitch_text, callout_text)
     
-    # Customize subject line based on template name request
-    if "price" in template_name.lower() or "pricing" in template_name.lower():
-        subject = f"Pricing & Automation Proposal for {lead_name or 'Your Business'} ⚡"
+    import config
+    company = getattr(config, "COMPANY", "nukkad").lower()
+    
+    if company == "bla_bli_blu":
+        html_body = _build_blabliblu_email_html(lead_name, pitch_text, callout_text)
+        if "price" in template_name.lower() or "pricing" in template_name.lower():
+            subject = f"Exclusive Pricing & Fragrance Combo Deals for {lead_name or 'You'} ⚡"
+        else:
+            subject = f"Your Custom Fragrance Recommendations from Bla Bli Blu ⚡"
     else:
-        subject = f"AI Automation Opportunity for {lead_name or 'Your Business'} ⚡"
+        html_body = _build_portfolio_html(lead_name, pitch_text, callout_text)
+        # Customize subject line based on template name request
+        if "price" in template_name.lower() or "pricing" in template_name.lower():
+            subject = f"Pricing & Automation Proposal for {lead_name or 'Your Business'} ⚡"
+        else:
+            subject = f"AI Automation Opportunity for {lead_name or 'Your Business'} ⚡"
         
     content_type = "html"
     body = html_body

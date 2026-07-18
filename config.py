@@ -6,20 +6,18 @@ load_dotenv()
 
 # LLM Config
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-COURSEWALLAH = os.getenv("COURSEWALLAH", "false").lower() == "true"
-NUKKAD = os.getenv("NUKKAD", "false").lower() == "true"
 COMPANY = os.getenv("COMPANY", "nukkad").lower()
-
-if COMPANY == "bla_bli_blu":
-    AGENT_MODE = "bla_bli_blu"
-elif NUKKAD:
-    AGENT_MODE = "portfolio"
-else:
-    AGENT_MODE = "coursewallah"
-
-
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Aoede")
 AGENT_NAME = os.getenv("AGENT_NAME", "Kavya")
+
+# Map COMPANY directly to AGENT_MODE
+if COMPANY == "bla_bli_blu":
+    AGENT_MODE = "bla_bli_blu"
+elif COMPANY == "coursewallah":
+    AGENT_MODE = "coursewallah"
+else:
+    AGENT_MODE = "portfolio"  # Default to portfolio mode (Nukkad)
+
 
 # Sarvam AI Config
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")

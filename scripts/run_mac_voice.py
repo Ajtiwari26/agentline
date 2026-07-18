@@ -69,12 +69,8 @@ async def main():
             welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
     else:
         welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
-    # Determine voice name dynamically (default to female Aoede for Kavya/Bla Bli Blu, Charon otherwise)
-    env_voice = getattr(config, "GEMINI_LIVE_VOICE", None)
-    if company == "bla_bli_blu" or kb.get("system", {}).get("agent_name", "").lower() == "kavya":
-        voice_name = env_voice if env_voice and env_voice != "Charon" else "Aoede"
-    else:
-        voice_name = env_voice or "Charon"
+    # Determine voice name directly from GEMINI_LIVE_VOICE config
+    voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Charon")
 
     live_config = types.LiveConnectConfig(
         response_modalities=["AUDIO"],

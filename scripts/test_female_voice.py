@@ -28,18 +28,9 @@ class TestFemaleVoiceAndAgentConfig(unittest.TestCase):
         self.assertIn("Nukkad Tech Solutions", sys_prompt, "System prompt should mention brand name 'Nukkad Tech Solutions'")
         
     def test_pipeline_voice_resolution(self):
-        """Verify that the pipeline resolves the correct prebuilt female voice (Aoede)."""
-        kb = prompts.load_kb()
-        company = config.COMPANY
-        env_voice = config.GEMINI_LIVE_VOICE
-        
-        # Mirroring the voice resolution logic from core/pipeline.py
-        if company == "bla_bli_blu" or kb.get("system", {}).get("agent_name", "").lower() == "kavya":
-            voice_name = env_voice if env_voice and env_voice != "Charon" else "Aoede"
-        else:
-            voice_name = env_voice or "Charon"
-            
-        self.assertEqual(voice_name, "Aoede", "Voice should resolve to female voice 'Aoede'")
+        """Verify that the pipeline resolves the configured voice directly."""
+        voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Charon")
+        self.assertEqual(voice_name, "Aoede", "Voice should resolve to configured voice 'Aoede'")
 
 if __name__ == "__main__":
     unittest.main()
