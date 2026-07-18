@@ -157,26 +157,11 @@ class VoicePipeline:
         # Build system prompt from knowledge base, lead context, and call direction
         self.system_prompt = build_system_prompt(lead_info, direction=self.direction)
         
-        # Initialize the Gemini client (Vertex AI with service account)
-        sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-        if sa_key_path and os.path.exists(sa_key_path):
-            logger.info(f"Initializing Gemini Live client with Vertex AI using Service Account: {sa_key_path}")
-            from google.oauth2 import service_account
-            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-            credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
-            self.client = genai.Client(
-                vertexai=True,
-                project=os.getenv("GCP_PROJECT", "igsl-67e70"),
-                location="us-central1",
-                credentials=credentials
-            )
-        else:
-            import config
-            logger.info("Initializing Gemini Live client with AI Studio API Key")
-            self.client = genai.Client(api_key=config.GEMINI_API_KEY)
+        # Initialize the Gemini client using the helper
+        import config
+        self.client, is_vertex = config.get_gemini_client()
         
         # Determine the model name dynamically (Vertex AI vs AI Studio Live API)
-        is_vertex = sa_key_path and os.path.exists(sa_key_path)
         self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.5-flash-native-audio-latest"
         self.summary_model_name = "gemini-2.5-flash" if is_vertex else "gemini-1.5-flash"
         logger.info(f"Using Gemini Live model: {self.model_name}, Summary model: {self.summary_model_name}")

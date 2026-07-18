@@ -53,3 +53,53 @@ def validate_config():
         print(f"WARNING: Missing environment variables: {', '.join(missing)}")
         return False
     return True
+
+def get_gemini_client():
+    """Initializes and returns a Google GenAI Client.
+    
+    Tries Vertex AI if GCP credentials (via GOOGLE_APPLICATION_CREDENTIALS or
+    GCP_SERVICE_ACCOUNT_JSON) are present. Otherwise, falls back to AI Studio key.
+    
+    Returns:
+        tuple: (client, is_vertex)
+    """
+    from google import genai
+    from google.oauth2 import service_account
+    import json
+    
+    sa_json_str = os.getenv("GCP_SERVICE_ACCOUNT_JSON", "")
+    sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    project_id = os.getenv("GCP_PROJECT", "igsl-67e70")
+    location = os.getenv("GCP_LOCATION", "us-central1")
+    
+    credentials = None
+    is_vertex = False
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+    
+    if sa_json_str:
+        try:
+            sa_info = json.loads(sa_json_str)
+            credentials = service_account.Credentials.from_service_account_info(sa_info, scopes=scopes)
+            is_vertex = True
+        except Exception:
+            pass
+            
+    if not is_vertex and sa_key_path and os.path.exists(sa_key_path):
+        try:
+            credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
+            is_vertex = True
+        except Exception:
+            pass
+            
+    if is_vertex and credentials:
+        client = genai.Client(
+            vertexai=True,
+            project=project_id,
+            location=location,
+            credentials=credentials
+        )
+        return client, True
+    else:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        return client, False
+

@@ -71,20 +71,8 @@ def _generate_personalized_pitch(lead_data: dict) -> dict:
         return result
 
     try:
-        from google import genai
-        sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-        if sa_key_path and os.path.exists(sa_key_path):
-            from google.oauth2 import service_account
-            scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-            credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
-            client = genai.Client(
-                vertexai=True,
-                project=os.getenv("GCP_PROJECT", "igsl-67e70"),
-                location="us-central1",
-                credentials=credentials
-            )
-        else:
-            client = genai.Client(api_key=getattr(config, "GEMINI_API_KEY", ""))
+        import config
+        client, _ = config.get_gemini_client()
 
         if company == "bla_bli_blu":
             prompt = f"""You are writing two pieces of text for a personalized customer email from a premium fragrance brand.

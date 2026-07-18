@@ -93,18 +93,8 @@ class GeminiAgent:
         self.phone = phone
         self.history: List[types.Content] = []
         self.system_prompt = build_system_prompt()
-        # Initialize the SDK Client (use Vertex AI if service account key is available, fallback to AI Studio)
-        sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-        if sa_key_path and os.path.exists(sa_key_path):
-            logger.info(f"Initializing Gemini client with Vertex AI using Service Account: {sa_key_path}")
-            self.client = genai.Client(
-                vertexai=True,
-                project=os.getenv("GCP_PROJECT", "igsl-67e70"),
-                location="us-central1"
-            )
-        else:
-            logger.info("Initializing Gemini client with standard AI Studio API Key")
-            self.client = genai.Client(api_key=config.GEMINI_API_KEY)
+        # Initialize the SDK Client using the helper
+        self.client, _ = config.get_gemini_client()
         
         # Keep track of active phone number in class-level context for tool access
         GeminiAgent._current_phone = phone
