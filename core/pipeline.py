@@ -177,7 +177,7 @@ class VoicePipeline:
         
         # Determine the model name dynamically (Vertex AI vs AI Studio Live API)
         is_vertex = sa_key_path and os.path.exists(sa_key_path)
-        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash"
+        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.0-flash-exp"
         self.summary_model_name = "gemini-2.5-flash" if is_vertex else "gemini-1.5-flash"
         logger.info(f"Using Gemini Live model: {self.model_name}, Summary model: {self.summary_model_name}")
         
