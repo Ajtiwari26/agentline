@@ -2,6 +2,9 @@ import os
 import sys
 import subprocess
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def deploy_to_render():
     sa_file = "/Users/ajaytiwari/agentline_sa_key.json"
@@ -11,13 +14,13 @@ def deploy_to_render():
         "/opt/homebrew/bin/render", "services", "create",
         "--name", "agentline-backend",
         "--type", "web_service",
-        "--repo", "https://github.com/Ajtiwari26/agentline",
+        "--repo", "https://github.com/Ajtiwari26/agentline.git",
         "--branch", "main",
         "--runtime", "python",
         "--build-command", "pip install -r requirements.txt",
         "--start-command", "uvicorn cloud.server:app --host 0.0.0.0 --port $PORT",
         "--health-check-path", "/health",
-        "--env-var", "COMPANY=nukkad",
+        "--env-var", "COMPANY=deploymate",
         "--env-var", "GEMINI_LIVE_VOICE=Aoede",
         "--env-var", "AGENT_NAME=Kavya",
         "--env-var", "SARVAM_SPEAKER=kavya",
@@ -45,6 +48,4 @@ def deploy_to_render():
     return result.returncode == 0
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
     deploy_to_render()

@@ -1,18 +1,18 @@
 import json
 import os
 
-# Nukkad Tech Solutions knowledge base (only active KB)
-NUKKAD_KNOWLEDGE_BASE = {
+# DeployMate knowledge base (only active KB)
+DEPLOYMATE_KNOWLEDGE_BASE = {
   "system": {
     "agent_name": "Kavya",
-    "brand_name": "Nukkad Tech Solutions",
-    "persona": "Professional and polite female AI receptionist and tech consultant representing Nukkad Tech Solutions. Speaks in a natural, warm Hinglish mix with a professional, helpful receptionist attitude. Never dumps long paragraphs. Speaks in short, engaging sentences (max 1-2 lines per turn) to keep the business client hooked on the call.",
-    "core_pitch": "Help Nukkad Tech Solutions pitch and close deals with local companies in Bhopal by explaining AI integration capabilities (outbound/inbound voice agents, WhatsApp AI bots, social media post scheduling, complete web/app development) and scheduling a callback with founders."
+    "brand_name": "DeployMate",
+    "persona": "Professional and polite female AI receptionist and tech consultant representing DeployMate. Speaks in a natural, warm Hinglish mix with a professional, helpful receptionist attitude. Never dumps long paragraphs. Speaks in short, engaging sentences (max 1-2 lines per turn) to keep the business client hooked on the call.",
+    "core_pitch": "Help DeployMate pitch and close deals with local companies in Bhopal by explaining AI integration capabilities (outbound/inbound voice agents, WhatsApp AI bots, social media post scheduling, complete web/app development) and scheduling a callback with founders."
   },
   "conversation_stages": {
     "greeting": {
       "intent": "Greet the customer politely, introduce yourself, and break the ice.",
-      "script": "Hey! Kavya here from Nukkad Tech Solutions. Kaise ho aap?"
+      "script": "Hey! Kavya here from DeployMate. Kaise ho aap?"
     }
   },
   "objections": {
@@ -30,10 +30,11 @@ NUKKAD_KNOWLEDGE_BASE = {
     }
   }
 }
+NUKKAD_KNOWLEDGE_BASE = DEPLOYMATE_KNOWLEDGE_BASE
 
 def load_kb():
     import config
-    company = getattr(config, "COMPANY", "nukkad").lower()
+    company = getattr(config, "COMPANY", "deploymate").lower()
     if company == "bla_bli_blu":
         from core import bla_bli_blu_prompts
         return bla_bli_blu_prompts.load_kb()
@@ -47,18 +48,18 @@ def load_kb():
         except Exception:
             pass
             
-    return NUKKAD_KNOWLEDGE_BASE
+    return DEPLOYMATE_KNOWLEDGE_BASE
 
 def build_system_prompt(lead_info=None, direction="outbound"):
     import config
-    company = getattr(config, "COMPANY", "nukkad").lower()
+    company = getattr(config, "COMPANY", "deploymate").lower()
     if company == "bla_bli_blu":
         from core import bla_bli_blu_prompts
         return bla_bli_blu_prompts.build_system_prompt(lead_info, direction)
 
     kb = load_kb()
-    agent_name = getattr(config, "AGENT_NAME", kb.get("system", {}).get("agent_name", "Ajay"))
-    brand_name = kb.get("system", {}).get("brand_name", "Nukkad Tech Solutions")
+    agent_name = getattr(config, "AGENT_NAME", kb.get("system", {}).get("agent_name", "Kavya"))
+    brand_name = kb.get("system", {}).get("brand_name", "DeployMate")
     persona = kb.get("system", {}).get("persona", "")
     
     # --- Shared sections (email capture + tools) ---
@@ -139,16 +140,16 @@ Your persona is: {persona}
 
 CONTEXT: This is an OUTBOUND call — YOU are calling the customer to introduce {brand_name} and pitch your services with a polite, professional receptionist-like attitude.
 
-Your task is to talk to a representative/owner of a company in Bhopal to introduce Nukkad Tech Solutions and close a deal or schedule a callback.
+Your task is to talk to a representative/owner of a company in Bhopal to introduce DeployMate and close a deal or schedule a callback.
 Follow this structured conversation flow but keep it casual, natural, and highly responsive:
-1. GREETING & ICE-BREAKER: Greet the lead. If you know the company name from the LEAD CONTEXT below, refer to it naturally (e.g., "Hey! {agent_name} here from Nukkad Tech Solutions. Kaise ho aap?"). STOP and wait for them to respond. Do NOT dump details yet.
+1. GREETING & ICE-BREAKER: Greet the lead. If you know the company name from the LEAD CONTEXT below, refer to it naturally (e.g., "Hey! {agent_name} here from DeployMate. Kaise ho aap?"). STOP and wait for them to respond. Do NOT dump details yet.
 2. INTRODUCE DEMO CONTEXT: After they greet you back, explain that you are calling using your self-developed AI voice agent (AgentLine) to show them a real-time demonstration of what your AI voice agents can do.
    * DYNAMIC INQUIRY RULE:
      - If the company name is already known from the LEAD CONTEXT below (e.g., FIITJEE Bhopal), do NOT ask "Aapka kya business hai?". Instead, acknowledge their industry and directly ask how they manage their customer support/operations (e.g., "Mujhe pata hai aap log coaching aur education sector mein ho, toh abhi aap log student inquiries aur parent support call loops kaise manage kar rahe ho?").
      - If the company name is not known, only then ask: "Aapka kya business hai Bhopal mein?"
 3. RAPPORT & CURRENT WORKFLOWS: Ask what tech tools or systems they currently use to handle follow-ups or queries. Keep it conversational.
-4. VALUE PROPOSITION: Pitch Nukkad Tech Solutions. We provide complete AI and tech support to businesses.
-   - Highlight: You do not need to hire a developer, train them, pay high salaries, and worry about them leaving for other opportunities. Nukkad Tech Solutions handles the entire tech/maintenance/development.
+4. VALUE PROPOSITION: Pitch DeployMate. We provide complete AI and tech support to businesses.
+   - Highlight: You do not need to hire a developer, train them, pay high salaries, and worry about them leaving for other opportunities. DeployMate handles the entire tech/maintenance/development.
 5. SERVICES & 4 CUSTOM USE-CASES MANDATE:
    - When presenting how we can help, you MUST brainstorm and propose AT LEAST 4 distinct, customized AI automation use cases tailored specifically to their industry! This ensures that even if they discard or remove 2 of the use cases, we still target and capture their interest on the other 2.
    - E.g., for Coaching/Education (like FIITJEE Bhopal):

@@ -6,7 +6,7 @@ load_dotenv()
 
 # LLM Config
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-COMPANY = os.getenv("COMPANY", "nukkad").lower()
+COMPANY = os.getenv("COMPANY", "deploymate").lower()
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Aoede")
 AGENT_NAME = os.getenv("AGENT_NAME", "Kavya")
 
@@ -16,7 +16,7 @@ if COMPANY == "bla_bli_blu":
 elif COMPANY == "coursewallah":
     AGENT_MODE = "coursewallah"
 else:
-    AGENT_MODE = "portfolio"  # Default to portfolio mode (Nukkad)
+    AGENT_MODE = "portfolio"  # Default to portfolio mode (DeployMate)
 
 
 # Sarvam AI Config
@@ -70,7 +70,7 @@ def get_gemini_client():
     sa_json_str = os.getenv("GCP_SERVICE_ACCOUNT_JSON", "")
     sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
     project_id = os.getenv("GCP_PROJECT", "igsl-67e70")
-    location = os.getenv("GCP_LOCATION", "us-central1")
+    location = os.getenv("GCP_LOCATION", "asia-south1")
     
     credentials = None
     is_vertex = False

@@ -47,7 +47,7 @@ def _generate_personalized_pitch(lead_data: dict) -> dict:
     else:
         default_pitch = (
             "Thanks for speaking with our AI voice assistant today! We loved learning about your business. "
-            "Nukkad Tech Solutions can revolutionize your operations by automating crucial "
+            "DeployMate can revolutionize your operations by automating crucial "
             "tasks like lead follow-ups and customer inquiries, ensuring timely engagement with every "
             "potential client. Our platform can seamlessly manage scheduling, dispatch information "
             "via WhatsApp and email, and significantly streamline your day-to-day operations."

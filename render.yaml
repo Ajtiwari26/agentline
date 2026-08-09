@@ -8,7 +8,7 @@ services:
       - key: PORT
         value: 10000
       - key: COMPANY
-        value: "nukkad"
+        value: "deploymate"
       - key: GEMINI_LIVE_VOICE
         value: "Aoede"
       - key: AGENT_NAME

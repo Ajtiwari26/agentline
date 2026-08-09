@@ -50,7 +50,7 @@ def set_env_vars():
     sa_json_str = json.dumps(json.load(open(sa_file)))
     
     env_vars = [
-        {"key": "COMPANY", "value": "nukkad"},
+        {"key": "COMPANY", "value": "deploymate"},
         {"key": "GEMINI_LIVE_VOICE", "value": "Aoede"},
         {"key": "AGENT_NAME", "value": "Kavya"},
         {"key": "SARVAM_SPEAKER", "value": "kavya"},

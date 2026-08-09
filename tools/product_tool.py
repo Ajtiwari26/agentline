@@ -82,5 +82,5 @@ def get_product_details(query: str) -> str:
         "- Web & App Development: Custom full-stack web and mobile application development.",
         "- Social Media Automation: Automatic post scheduling and lead generation tools."
     ]
-    return "Services and Products offered by Nukkad Tech Solutions:\n" + "\n".join(services)
+    return "Services and Products offered by DeployMate:\n" + "\n".join(services)
 
