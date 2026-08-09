@@ -2,14 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install minimal build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     git \
     curl \
-    portaudio19-dev \
-    libasound2-dev \
-    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

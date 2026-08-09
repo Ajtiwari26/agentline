@@ -1,0 +1,12 @@
+.git
+.gitignore
+.logs
+.code-review-graph
+*.apk
+android/
+bluetooth/
+render_call_logs_*.json
+leads_bhopal.csv
+email-service/
+__pycache__/
+*.pyc
