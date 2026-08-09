@@ -4,10 +4,12 @@ import logging
 import asyncio
 from fastapi import FastAPI, WebSocket, Request, Depends
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from cloud.ws_handler import handle_exotel_websocket
+from cloud.web_handler import handle_web_websocket
 from db.database import get_db, get_pending_callbacks
 
 # Set up logging
@@ -15,6 +17,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AgentLine Telephony Cloud Backend")
+
+# The DeployMate website pre-warms this service (GET /health) before a call.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 async def startup_event():
@@ -63,6 +73,11 @@ async def voicebot_endpoint(request: Request):
 async def websocket_route(websocket: WebSocket):
     """Bidirectional streaming WebSocket endpoint for Exotel audio."""
     await handle_exotel_websocket(websocket)
+
+@app.websocket("/ws/web")
+async def web_websocket_route(websocket: WebSocket):
+    """Browser voice endpoint for the DeployMate website inbound agent widget."""
+    await handle_web_websocket(websocket)
 
 # Leads Dashboard APIs
 @app.get("/api/leads")

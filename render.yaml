@@ -27,4 +27,10 @@ services:
         sync: false
       - key: MONGO_URI
         sync: false
+      - key: DEPLOYMATE_SMTP_USER
+        sync: false
+      - key: DEPLOYMATE_SMTP_PASSWORD
+        sync: false
+      - key: DEPLOYMATE_MONGO_URI
+        sync: false
 
