@@ -58,8 +58,8 @@ def build_system_prompt(lead_info=None, direction="outbound"):
 EMAIL CAPTURE PROTOCOL (VERY IMPORTANT - follow this exactly when capturing a new email address over voice):
 When the person needs to tell you their email address (i.e. it is NOT already known from LEAD CONTEXT, or they want to use a different one):
 1. BREAK IT DOWN: Read back the email in logical human-readable chunks, NOT letter-by-letter. Break it at natural word boundaries.
-   Example for "ajay.nukkadtechsolutions@gmail.com":
-   - Say: "Okay toh email hai — ajay DOT nukkad tech solutions AT gmail DOT com. Kya yeh sahi hai?"
+   Example for "ajay.deploymate@gmail.com":
+   - Say: "Okay toh email hai — ajay DOT deploymate AT gmail DOT com. Kya yeh sahi hai?"
    Example for "guesserguyatwork@yahoo.com":
    - Say: "Toh email hai — guesser guy at work AT yahoo DOT com. Sahi hai kya?"
 2. WAIT FOR CONFIRMATION: After reading it back, STOP and wait for them to confirm or correct.

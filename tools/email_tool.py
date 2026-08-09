@@ -98,7 +98,7 @@ Business Notes: {notes}
 Interest Level: {interest}
 
 Generate a JSON object with exactly two keys:
-1. "pitch": Start with "Thanks for speaking with our AI voice assistant today! We loved learning about your business." Then 2-3 MORE sentences explaining how Nukkad Tech Solutions can specifically help THIS lead's business. Be specific to their industry.
+1. "pitch": Start with "Thanks for speaking with our AI voice assistant today! We loved learning about your business." Then 2-3 MORE sentences explaining how DeployMate can specifically help THIS lead's business. Be specific to their industry.
 2. "callout": A single impactful sentence about quantitative benefits. Include HTML bold+red tags around 3 key benefit phrases, like: This will not only <b style="color:#DC2626;">save your team valuable time</b> and <b style="color:#DC2626;">reduce costs</b>, but also <b style="color:#DC2626;">improve conversion rates</b>.
 
 Output ONLY valid JSON. No markdown backticks.
@@ -266,7 +266,6 @@ def _build_blabliblu_email_html(lead_name: str, pitch_text: str, callout_text: s
 
 def _build_portfolio_html(lead_name: str, pitch_text: str, callout_text: str) -> str:
     logo_url = f"{EMAIL_ASSETS_URL}/logo.png"
-    ai_phone_url = f"{EMAIL_ASSETS_URL}/ai-phone.png"
     display_name = lead_name if lead_name else "there"
 
     return f"""<!DOCTYPE html>
@@ -274,121 +273,77 @@ def _build_portfolio_html(lead_name: str, pitch_text: str, callout_text: str) ->
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Nukkad Tech Solutions Newsletter</title>
+<title>DeployMate Newsletter</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Sora:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
 </head>
-<body style="margin:0; padding:0; background-color:#f7f9fd; font-family:'Inter', sans-serif; color:#191c1f; -webkit-font-smoothing:antialiased;">
-<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f7f9fd; padding:40px 0;">
+<body style="margin:0; padding:0; background-color:#0b0f19; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color:#f3f4f6; -webkit-font-smoothing:antialiased;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#0b0f19;">
   <tr>
-    <td align="center">
-      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background-color:#ffffff; border:1px solid #e0e2e6; border-radius:12px; overflow:hidden; box-shadow:0 4px 25px rgba(0,0,0,0.06);">
+    <td align="center" style="padding: 40px 15px;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background-color:#111827; border-radius:16px; border:1px solid #1f2937; overflow:hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
         
-        <!-- Header -->
+        <!-- HEADER / LOGO -->
         <tr>
-          <td align="center" style="padding:24px; border-bottom:1px solid #e0e2e6; background-color:#ffffff;">
+          <td align="center" style="padding:32px 32px 24px 32px; border-bottom:1px solid #1f2937; background: linear-gradient(180deg, #1f2937 0%, #111827 100%);">
             <picture>
-              <source srcset="https://nukkadtechsolutions.vercel.app/full-logo.svg" type="image/svg+xml">
-              <img src="{logo_url}" width="220" height="auto" alt="Nukkad Tech Solutions" style="display:block; max-width:220px; height:auto;" />
+              <source srcset="https://deploymate.vercel.app/full-logo.svg" type="image/svg+xml">
+              <img src="{logo_url}" width="220" height="auto" alt="DeployMate" style="display:block; max-width:220px; height:auto;" />
             </picture>
           </td>
         </tr>
         
         <!-- Body Content -->
         <tr>
-          <td style="padding:32px 24px;">
+          <td style="padding:32px 32px;">
             <!-- Greeting -->
-            <h2 style="font-family:'Sora', sans-serif; font-size:24px; font-weight:600; color:#111827; margin:0 0 24px 0;">Hi <b>{display_name}</b>,</h2>
+            <h2 style="font-family:'Inter', sans-serif; font-size:24px; font-weight:600; color:#ffffff; margin:0 0 24px 0;">Hi <b>{display_name}</b>,</h2>
             
             <!-- Hero Section -->
             <div style="margin-bottom:48px;">
-              <h1 style="font-family:'Sora', sans-serif; font-size:32px; font-weight:600; color:#111827; margin:0 0 12px 0; line-height:1.3;">Your AI Strategy for Growth</h1>
-              <p style="font-family:'Inter', sans-serif; font-size:16px; line-height:1.6; color:#4b5563; margin:0 0 24px 0;">
+              <h1 style="font-family:'Inter', sans-serif; font-size:32px; font-weight:700; color:#ffffff; margin:0 0 12px 0; line-height:1.3;">Your AI Strategy for Growth</h1>
+              <p style="font-family:'Inter', sans-serif; font-size:16px; line-height:1.6; color:#d1d5db; margin:0 0 24px 0;">
                 {pitch_text}
               </p>
-              <img src="{ai_phone_url}" alt="AI Strategy Visualization" width="100%" style="width:100%; height:auto; border-radius:8px; display:block; border:1px solid #e0e2e6;" />
             </div>
             
             <!-- Metrics Strip -->
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#191c1f; border-radius:8px; margin-bottom:48px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1f2937; border-radius:12px; margin-bottom:48px;">
               <tr>
                 <td style="padding:24px; text-align:center;">
-                  <p style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#fff6f5; margin:0 0 4px 0; text-transform:uppercase; letter-spacing:0.05em;">Potential ROI</p>
-                  <p style="font-family:'Sora', sans-serif; font-size:40px; font-weight:700; color:#dc2626; margin:0 0 4px 0;">70%</p>
-                  <p style="font-family:'Inter', sans-serif; font-size:14px; color:#e0e2e6; margin:0;">{callout_text}</p>
-                </td>
-              </tr>
-            </table>
-            
-            <!-- Solutions Grid Section -->
-            <h3 style="font-family:'Sora', sans-serif; font-size:24px; font-weight:600; color:#111827; margin:0 0 24px 0; text-align:center;">Our Core Solutions</h3>
-            
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:32px;">
-              <tr>
-                <!-- Col 1 -->
-                <td width="50%" valign="top" style="padding-right:12px; padding-bottom:24px;">
-                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
-                    <div style="font-size:24px; margin-bottom:12px;">📞</div>
-                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Voice AI Agents</h4>
-                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Autonomous inbound & outbound calling agents that handle sales and support 24/7.</p>
-                  </div>
-                </td>
-                <!-- Col 2 -->
-                <td width="50%" valign="top" style="padding-left:12px; padding-bottom:24px;">
-                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
-                    <div style="font-size:24px; margin-bottom:12px;">💬</div>
-                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">WhatsApp CRM</h4>
-                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">AI-powered WhatsApp bots that resolve inquiries, book meetings, and update CRMs.</p>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <!-- Col 3 -->
-                <td width="50%" valign="top" style="padding-right:12px;">
-                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
-                    <div style="font-size:24px; margin-bottom:12px;">🤖</div>
-                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Chat Agents</h4>
-                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Intelligent website chatbots trained directly on your business docs.</p>
-                  </div>
-                </td>
-                <!-- Col 4 -->
-                <td width="50%" valign="top" style="padding-left:12px;">
-                  <div style="background-color:#ffffff; border:1px solid #e0e2e6; border-radius:8px; padding:24px; min-height:140px;">
-                    <div style="font-size:24px; margin-bottom:12px;">⚙️</div>
-                    <h4 style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#111827; margin:0 0 4px 0;">Workflow Auto</h4>
-                    <p style="font-family:'Inter', sans-serif; font-size:14px; color:#4b5563; margin:0; line-height:1.4;">Automate business notifications, approvals, and data sync between siloed apps.</p>
-                  </div>
+                  <p style="font-family:'Inter', sans-serif; font-size:14px; font-weight:600; color:#9ca3af; margin:0 0 4px 0; text-transform:uppercase; letter-spacing:0.05em;">Potential ROI</p>
+                  <p style="font-family:'Inter', sans-serif; font-size:40px; font-weight:700; color:#ef4444; margin:0 0 4px 0;">70%</p>
+                  <p style="font-family:'Inter', sans-serif; font-size:14px; color:#f3f4f6; margin:0;">{callout_text}</p>
                 </td>
               </tr>
             </table>
             
             <!-- CTA Section -->
             <div style="text-align:center; margin-top:40px;">
-              <a href="https://nukkadtechsolutions.vercel.app/" style="display:inline-block; background-color:#dc2626; color:#ffffff; border-radius:8px; padding:12px 24px; font-family:'Inter', sans-serif; font-size:14px; font-weight:600; text-decoration:none;">
+              <a href="https://deploymate.vercel.app/" style="display:inline-block; background-color:#ef4444; color:#ffffff; border-radius:8px; padding:12px 24px; font-family:'Inter', sans-serif; font-size:14px; font-weight:600; text-decoration:none;">
                 Book a Demo
               </a>
             </div>
           </td>
         </tr>
         
-        <!-- Footer -->
+        <!-- FOOTER -->
         <tr>
-          <td align="center" style="background-color:#2d3134; padding:48px 24px; text-align:center;">
-            <div style="font-family:'Sora', sans-serif; font-size:20px; font-weight:700; color:#ffffff; margin-bottom:12px;">
-              Nukkad Tech Solutions
-            </div>
-            <div style="font-family:'Inter', sans-serif; font-size:14px; color:#e0e2e6; opacity:0.8; margin-bottom:24px;">
-              © 2026 Nukkad Tech Solutions. All rights reserved.
-            </div>
-            <div style="font-family:'Inter', sans-serif; font-size:12px;">
-              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Unsubscribe</a> | 
-              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Privacy Policy</a> | 
-              <a href="mailto:ajay.nukkadtechsolutions@gmail.com" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Contact Us</a>
-            </div>
+          <td align="center" style="padding:28px 32px; background-color:#0b0f19; border-top:1px solid #1f2937; font-family:'Inter', sans-serif; font-size:12px; color:#9ca3af;">
+            <p style="margin:0 0 8px 0; font-weight:600; color:#e0e2e6;">
+              DeployMate
+            </p>
+            <p style="margin:0 0 12px 0;">
+              © 2026 DeployMate. All rights reserved.
+            </p>
+            <p style="margin:0;">
+              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Privacy Policy</a> • 
+              <a href="#" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Terms of Service</a> • 
+              <a href="mailto:ajay.deploymate@gmail.com" style="color:#e0e2e6; text-decoration:none; margin:0 8px; opacity:0.8;">Contact Us</a>
+            </p>
           </td>
         </tr>
-        
       </table>
     </td>
   </tr>
@@ -448,12 +403,12 @@ def send_email_via_resend(to_email: str, subject: str, body: str, content_type: 
         "Content-Type": "application/json"
     }
     
-    company = getattr(config, "COMPANY", "nukkad").lower()
+    company = getattr(config, "COMPANY", "deploymate").lower()
     if company == "bla_bli_blu":
         sender_name = "Bla Bli Blu"
     else:
         mode = getattr(config, "AGENT_MODE", "portfolio")
-        sender_name = "Nukkad Tech Solutions" if mode == "portfolio" else "CourseWallah"
+        sender_name = "DeployMate" if mode == "portfolio" else "CourseWallah"
     
     payload = {
         "from": config.EMAIL_FROM or f"{sender_name} <onboarding@resend.dev>",
@@ -482,11 +437,40 @@ def send_email_via_resend(to_email: str, subject: str, body: str, content_type: 
 # ──────────────────────────────────────────────────
 # Main entry point (called by pipeline tool handler)
 # ──────────────────────────────────────────────────
-def send_template_email(phone: str, to_email: str, template_name: str = "syllabus") -> str:
+def send_email(to_email: str, subject: str = "", template: str = "portfolio", phone: str = "", lead_notes: str = "") -> str:
     """
-    Sends a personalized designer HTML portfolio email for Nukkad Tech Solutions to the user.
-    Purged of all CourseWallah templates to guarantee only Nukkad Tech Solutions content is sent.
+    Sends a personalized designer HTML portfolio email for DeployMate to the user.
+    Purged of all CourseWallah templates to guarantee only DeployMate content is sent.
+    
+    Args:
+        to_email: Recipient's email address.
+        subject: Optional email subject line.
+        template: Template style (default: 'portfolio').
+        phone: Recipient's phone number for lead context.
+        lead_notes: Optional notes or context about the lead.
     """
+    import config
+    company = getattr(config, "COMPANY", "deploymate").lower()
+    if company == "bla_bli_blu":
+        from tools import bla_bli_blu_email_tool
+        return bla_bli_blu_email_tool.send_email(to_email, subject, template, phone, lead_notes)
+
+    if not to_email:
+        logger.error("No recipient email provided for send_email.")
+        return "Error: Recipient email is required."
+
+    mode = getattr(config, "AGENT_MODE", "portfolio")
+    sender_name = "DeployMate" if mode == "portfolio" else "CourseWallah"
+    
+    # Force subject line if empty
+    if not subject:
+        if mode == "portfolio":
+            subject = f"Pricing & Automation Proposal for {to_email.split('@')[0].capitalize()} ⚡"
+        else:
+            subject = f"Course Syllabus & Admission Details for {to_email.split('@')[0].capitalize()} 📚"
+
+    logger.info(f"Triggering DeployMate email for {to_email} (Phone: {phone}) (subject: {subject})")
+    
     invalid_emails = ["lead@example.com", "example@example.com", "user@example.com", "test@example.com", ""]
     if not to_email or to_email.strip().lower() in invalid_emails or "@" not in to_email or "example" in to_email.lower():
         logger.warning(f"Email tool called with invalid/placeholder email: '{to_email}'. Returning early.")
@@ -509,7 +493,8 @@ def send_template_email(phone: str, to_email: str, template_name: str = "syllabu
     lead_name = lead_data.get("name", "") if lead_data else ""
     
     import config
-    company = getattr(config, "COMPANY", "nukkad").lower()
+    company = getattr(config, "COMPANY", "deploymate").lower()
+    template_name = template
     
     if company == "bla_bli_blu":
         html_body = _build_blabliblu_email_html(lead_name, pitch_text, callout_text)
@@ -528,7 +513,7 @@ def send_template_email(phone: str, to_email: str, template_name: str = "syllabu
     content_type = "html"
     body = html_body
     
-    logger.info(f"Triggering Nukkad Tech Solutions email for {to_email} (Phone: {phone}) (subject: {subject})")
+    logger.info(f"Triggering DeployMate email for {to_email} (Phone: {phone}) (subject: {subject})")
     
     success = False
     if getattr(config, "RESEND_API_KEY", None):

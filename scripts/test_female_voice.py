@@ -13,19 +13,19 @@ class TestFemaleVoiceAndAgentConfig(unittest.TestCase):
         """Verify that environment variables are correctly loaded for the female voice and name."""
         self.assertEqual(config.AGENT_NAME, "Kavya", "AGENT_NAME should be configured as 'Kavya'")
         self.assertEqual(config.GEMINI_LIVE_VOICE, "Aoede", "GEMINI_LIVE_VOICE should be configured as 'Aoede'")
-        self.assertEqual(config.COMPANY, "nukkad", "COMPANY should be configured as 'nukkad'")
+        self.assertEqual(config.COMPANY, "deploymate", "COMPANY should be configured as 'deploymate'")
         
     def test_knowledge_base_loading(self):
-        """Verify that load_kb loads the Nukkad Tech Solutions knowledge base."""
+        """Verify that load_kb loads the DeployMate knowledge base."""
         kb = prompts.load_kb()
         brand_name = kb.get("system", {}).get("brand_name")
-        self.assertEqual(brand_name, "Nukkad Tech Solutions", "Brand name should be Nukkad Tech Solutions")
+        self.assertEqual(brand_name, "DeployMate", "Brand name should be DeployMate")
         
     def test_system_prompt_generation(self):
         """Verify that the system prompt dynamically contains the correct name and brand."""
         sys_prompt = prompts.build_system_prompt(direction="outbound")
         self.assertIn("Kavya", sys_prompt, "System prompt should mention agent name 'Kavya'")
-        self.assertIn("Nukkad Tech Solutions", sys_prompt, "System prompt should mention brand name 'Nukkad Tech Solutions'")
+        self.assertIn("DeployMate", sys_prompt, "System prompt should mention brand name 'DeployMate'")
         
     def test_pipeline_voice_resolution(self):
         """Verify that the pipeline resolves the configured voice directly."""

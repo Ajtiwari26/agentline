@@ -57,7 +57,7 @@ async def main():
     print(f"Connecting to Gemini Live ({model})...")
     
     kb = load_kb()
-    company = getattr(config, "COMPANY", "nukkad").lower()
+    company = getattr(config, "COMPANY", "deploymate").lower()
     welcome_text = ""
     if direction == "inbound":
         if company == "bla_bli_blu":
@@ -65,8 +65,8 @@ async def main():
             brand_name = kb.get("system", {}).get("brand_name", "Bla Bli Blu")
             welcome_text = f"Hey! {brand_name} mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar sakti hoon?"
         else:
-            agent_name = getattr(config, "AGENT_NAME", "Ajay")
-            welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
+            agent_name = getattr(config, "AGENT_NAME", "Kavya")
+            welcome_text = f"Hey! DeployMate mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
     else:
         welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
     # Determine voice name directly from GEMINI_LIVE_VOICE config

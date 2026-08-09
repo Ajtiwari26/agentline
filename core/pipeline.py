@@ -197,11 +197,11 @@ class VoicePipeline:
         # Load welcome text based on call direction
         welcome_text = None
         kb = load_kb()
-        company = getattr(config, "COMPANY", "nukkad").lower()
-        agent_name = getattr(config, "AGENT_NAME", "Ajay")
+        company = getattr(config, "COMPANY", "deploymate").lower()
+        agent_name = getattr(config, "AGENT_NAME", "Kavya")
         
         if self.direction == "outbound":
-            welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", f"Hey! {agent_name} here from Nukkad Tech Solutions. Kaise ho aap?")
+            welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", f"Hey! {agent_name} here from DeployMate. Kaise ho aap?")
             welcome_text = welcome_text.replace("Ajay", agent_name)
         elif self.direction == "inbound":
             # For inbound calls, use a receptive welcome greeting based on active company
@@ -212,7 +212,7 @@ class VoicePipeline:
             else:
                 agent_mode = getattr(config, "AGENT_MODE", "portfolio")
                 if agent_mode == "portfolio":
-                    welcome_text = f"Hey! Nukkad Tech Solutions mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
+                    welcome_text = f"Hey! DeployMate mein aapka swagat hai. Main {agent_name} hoon. Bataiye, kaise madad kar {'sakti' if agent_name.lower() == 'kavya' else 'sakta'} hoon?"
                 else:
                     welcome_text = f"Hey! CourseWallah mein welcome hai yaar. Main {agent_name} hoon. Bolo, kya jaanna hai?"
         
