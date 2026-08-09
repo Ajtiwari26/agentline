@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = logging.getLogger(__name__)
 
-SITE_URL = "https://deploymate.vercel.app"
+SITE_URL = "https://deploymates.vercel.app"
 
 DEPLOYMATE_SMTP_USER = os.getenv("DEPLOYMATE_SMTP_USER", "ajay.deploymate@gmail.com")
 DEPLOYMATE_SMTP_PASSWORD = os.getenv("DEPLOYMATE_SMTP_PASSWORD", "")
@@ -309,7 +309,7 @@ def _build_email_html(name: str, personal_note: str, requirement: str) -> str:
               <tr>
                 <td style="font-family:Inter,Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#999999;">
                   AI voice agents &#8226; WhatsApp CRM &#8226; Websites &amp; apps &#8226; Automation<br/>
-                  Bhopal, India &nbsp;&#8226;&nbsp; <a href="mailto:{DEPLOYMATE_SMTP_USER}" style="color:#FFFFFF; text-decoration:underline;">{DEPLOYMATE_SMTP_USER}</a> &nbsp;&#8226;&nbsp; <a href="{SITE_URL}" style="color:#FFFFFF; text-decoration:underline;">deploymate.vercel.app</a>
+                  Bhopal, India &nbsp;&#8226;&nbsp; <a href="mailto:{DEPLOYMATE_SMTP_USER}" style="color:#FFFFFF; text-decoration:underline;">{DEPLOYMATE_SMTP_USER}</a> &nbsp;&#8226;&nbsp; <a href="{SITE_URL}" style="color:#FFFFFF; text-decoration:underline;">deploymates.vercel.app</a>
                 </td>
               </tr>
               <tr>
