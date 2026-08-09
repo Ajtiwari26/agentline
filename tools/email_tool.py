@@ -527,8 +527,15 @@ def send_email(to_email: str, subject: str = "", template: str = "portfolio", ph
         log_email(phone=phone, subject=subject, body=body, status=status)
     except Exception as e:
         logger.error(f"Failed to log email in DB: {e}")
-        
+    
+    status = "sent" if success else "failed"
+    log_email_sent(to_email, subject, status)
+    
     if success:
-        return f"Successfully sent the email to {to_email}."
+        return f"SUCCESS: Portfolio email successfully sent to {to_email}."
     else:
-        return f"Failed to send email to {to_email}. Please verify SMTP credentials."
+        return "ERROR: Failed to send email via SMTP/Resend."
+
+def send_template_email(phone: str, to_email: str, template_name: str = "portfolio") -> str:
+    """Legacy alias function for send_email to preserve module API compatibility."""
+    return send_email(to_email=to_email, template=template_name, phone=phone)
