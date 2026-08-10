@@ -349,7 +349,46 @@ def send_website_email(
         )
 
     subject = f"{name.strip()}, your AI deployment brief — DeployMate" if name.strip() else "Your AI deployment brief — DeployMate"
+    html = _build_email_html(name, personal_note, requirement)
 
+    # Render's free tier blocks outbound SMTP ports, so production sends go
+    # through the Vercel SMTP proxy; direct SMTP remains as a fallback for
+    # local runs or if the proxy is down.
+    if _send_via_proxy(to_email, subject, html):
+        logger.info(f"Website brief email sent to {to_email} via proxy")
+        return f"Email sent successfully to {to_email}."
+
+    _send_via_smtp(to_email, subject, html, name, personal_note)
+    logger.info(f"Website brief email sent to {to_email} via direct SMTP")
+    return f"Email sent successfully to {to_email}."
+
+
+def _send_via_proxy(to_email: str, subject: str, html: str) -> bool:
+    import requests
+    proxy_url = os.getenv("EMAIL_PROXY_URL", "https://email-service-five-orpin.vercel.app/api/send")
+    try:
+        response = requests.post(
+            proxy_url,
+            json={
+                "to_email": to_email,
+                "subject": subject,
+                "body": html,
+                "smtp_user": DEPLOYMATE_SMTP_USER,
+                "smtp_password": DEPLOYMATE_SMTP_PASSWORD,
+                "email_from": f"Kavya from DeployMate <{DEPLOYMATE_SMTP_USER}>",
+                "content_type": "html",
+            },
+            timeout=20,
+        )
+        if response.status_code == 200 and response.json().get("success"):
+            return True
+        logger.error(f"Email proxy returned failure ({response.status_code}): {response.text[:200]}")
+    except Exception as e:
+        logger.error(f"Email proxy unreachable: {e}")
+    return False
+
+
+def _send_via_smtp(to_email: str, subject: str, html: str, name: str, personal_note: str) -> None:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = f"Kavya from DeployMate <{DEPLOYMATE_SMTP_USER}>"
@@ -363,12 +402,9 @@ def send_website_email(
         + f"\n\nBook a live demo: {SITE_URL}\n\n— Kavya, DeployMate's inbound voice agent"
     )
     msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(_build_email_html(name, personal_note, requirement), "html", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
 
     with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
         server.starttls()
         server.login(DEPLOYMATE_SMTP_USER, DEPLOYMATE_SMTP_PASSWORD)
         server.sendmail(DEPLOYMATE_SMTP_USER, [to_email], msg.as_string())
-
-    logger.info(f"Website brief email sent to {to_email}")
-    return f"Email sent successfully to {to_email}."

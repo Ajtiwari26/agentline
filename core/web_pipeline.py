@@ -334,6 +334,22 @@ class WebVoicePipeline:
         except Exception as e:
             logger.error(f"[web:{self.session_id}] background tool {fn_name} failed: {e}")
             await self.send_event({"type": "tool", "name": fn_name, "status": "error"})
+            # The tool already reported instant success to keep latency low, so
+            # tell the model the truth and let it correct itself mid-call.
+            if fn_name == "send_details_email" and self.active and self.session:
+                try:
+                    await self.session.send(
+                        input=types.LiveClientContent(
+                            turns=[types.Content(role="user", parts=[types.Part.from_text(text=(
+                                "SYSTEM NOTE (not the caller speaking): the email you tried to send "
+                                "actually FAILED to deliver. Briefly apologize to the caller and assure "
+                                "them the DeployMate team will email the details manually within a few hours."
+                            ))])],
+                            turn_complete=True,
+                        )
+                    )
+                except Exception:
+                    pass
 
     async def close(self):
         if not self.active and self.session is None:
