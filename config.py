@@ -36,11 +36,16 @@ EMAIL_FROM = os.getenv("EMAIL_FROM", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 EMAIL_PROXY_URL = os.getenv("EMAIL_PROXY_URL", "https://email-service-five-orpin.vercel.app/api/send")
 
-# Exotel Config
+# Exotel Config (Legacy)
 EXOTEL_API_KEY = os.getenv("EXOTEL_API_KEY", "")
 EXOTEL_API_TOKEN = os.getenv("EXOTEL_API_TOKEN", "")
 EXOTEL_SUBDOMAIN = os.getenv("EXOTEL_SUBDOMAIN", "")
 EXOTEL_VIRTUAL_NUMBER = os.getenv("EXOTEL_VIRTUAL_NUMBER", "")
+
+# Plivo Config
+PLIVO_AUTH_ID = os.getenv("PLIVO_AUTH_ID", "")
+PLIVO_AUTH_TOKEN = os.getenv("PLIVO_AUTH_TOKEN", "")
+PLIVO_PHONE_NUMBER = os.getenv("PLIVO_PHONE_NUMBER", "")
 
 def validate_config():
     """Validates that crucial environment variables are present."""
@@ -102,4 +107,3 @@ def get_gemini_client():
     else:
         client = genai.Client(api_key=GEMINI_API_KEY)
         return client, False
-

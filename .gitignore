@@ -21,6 +21,10 @@ __pycache__/
 
 # Large binaries (APKs, etc.)
 *.apk
+.gradle/
+**/build/
+android/AudioBridge/app/build/
+android/AudioBridge/build/
 
 # System files
 .DS_Store
