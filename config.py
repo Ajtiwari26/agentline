@@ -18,11 +18,6 @@ elif COMPANY == "coursewallah":
 else:
     AGENT_MODE = "portfolio"  # Default to portfolio mode (DeployMate)
 
-
-# Sarvam AI Config
-SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
-SARVAM_SPEAKER = os.getenv("SARVAM_SPEAKER", "shubh")
-
 # Database Config
 MONGO_URI = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "agentline")
@@ -36,13 +31,7 @@ EMAIL_FROM = os.getenv("EMAIL_FROM", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 EMAIL_PROXY_URL = os.getenv("EMAIL_PROXY_URL", "https://email-service-five-orpin.vercel.app/api/send")
 
-# Exotel Config (Legacy)
-EXOTEL_API_KEY = os.getenv("EXOTEL_API_KEY", "")
-EXOTEL_API_TOKEN = os.getenv("EXOTEL_API_TOKEN", "")
-EXOTEL_SUBDOMAIN = os.getenv("EXOTEL_SUBDOMAIN", "")
-EXOTEL_VIRTUAL_NUMBER = os.getenv("EXOTEL_VIRTUAL_NUMBER", "")
-
-# Plivo Config
+# Plivo Telephony Config
 PLIVO_AUTH_ID = os.getenv("PLIVO_AUTH_ID", "")
 PLIVO_AUTH_TOKEN = os.getenv("PLIVO_AUTH_TOKEN", "")
 PLIVO_PHONE_NUMBER = os.getenv("PLIVO_PHONE_NUMBER", "")
@@ -50,10 +39,10 @@ PLIVO_PHONE_NUMBER = os.getenv("PLIVO_PHONE_NUMBER", "")
 def validate_config():
     """Validates that crucial environment variables are present."""
     missing = []
-    if not GEMINI_API_KEY:
-        missing.append("GEMINI_API_KEY")
-    if not SARVAM_API_KEY:
-        missing.append("SARVAM_API_KEY")
+    if not GEMINI_API_KEY and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        missing.append("GEMINI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS")
+    if not PLIVO_AUTH_ID or not PLIVO_AUTH_TOKEN:
+        missing.append("PLIVO_AUTH_ID / PLIVO_AUTH_TOKEN")
     if missing:
         print(f"WARNING: Missing environment variables: {', '.join(missing)}")
         return False

@@ -17,13 +17,11 @@ services:
         sync: false
       - key: GCP_SERVICE_ACCOUNT_JSON
         sync: false
-      - key: EXOTEL_API_KEY
+      - key: PLIVO_AUTH_ID
         sync: false
-      - key: EXOTEL_API_TOKEN
+      - key: PLIVO_AUTH_TOKEN
         sync: false
-      - key: EXOTEL_ACCOUNT_SID
-        sync: false
-      - key: SARVAM_API_KEY
+      - key: PLIVO_PHONE_NUMBER
         sync: false
       - key: MONGO_URI
         sync: false
@@ -33,4 +31,3 @@ services:
         sync: false
       - key: DEPLOYMATE_MONGO_URI
         sync: false
-

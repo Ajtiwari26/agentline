@@ -29,12 +29,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    # Pre-cache the welcome message so it's ready immediately
-    from core.tts import pre_cache_welcome_message
-    from core.prompts import load_kb
-    kb = load_kb()
-    welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", "Hey! Kaise ho?")
-    asyncio.create_task(pre_cache_welcome_message(welcome_text))
+    logger.info("AgentLine Backend initialized with Gemini Live & Plivo Telephony.")
 
 @app.get("/health")
 async def health_check():

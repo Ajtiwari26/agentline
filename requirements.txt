@@ -1,6 +1,5 @@
 pymongo
 google-genai
-sarvamai
 fastapi
 uvicorn
 python-dotenv
