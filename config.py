@@ -65,7 +65,7 @@ def get_gemini_client():
     sa_json_str = os.getenv("GCP_SERVICE_ACCOUNT_JSON", "")
     sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
     project_id = os.getenv("GCP_PROJECT", "igsl-67e70")
-    location = os.getenv("GCP_LOCATION", "asia-south1")
+    location = os.getenv("GCP_LOCATION", "us-central1")
     
     credentials = None
     is_vertex = False
