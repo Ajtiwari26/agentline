@@ -189,6 +189,20 @@ class VoicePipeline:
         self.welcome_sent = False
         self.transcript_log = []  # For MongoDB logging
         self.tool_call_counts = {}  # Track per-tool call count to prevent infinite retry loops
+        self.audio_output_buffer = []  # Pre-buffered audio for instant playback
+        self.input_audio_buffer = []   # Buffer for user voice if user speaks before handshake completes
+
+    async def set_send_audio_callback(self, callback: Callable[[bytes], Coroutine[Any, Any, None]]):
+        """Attaches the audio callback and immediately flushes any pre-warmed audio packets."""
+        self.send_audio_callback = callback
+        if self.audio_output_buffer:
+            logger.info(f"Instant connection: Flushing {len(self.audio_output_buffer)} pre-warmed audio chunks to caller.")
+            for chunk in self.audio_output_buffer:
+                try:
+                    await callback(chunk)
+                except Exception as e:
+                    logger.error(f"Error flushing pre-buffered chunk: {e}")
+            self.audio_output_buffer.clear()
 
     async def start(self):
         """Connects to Gemini Live API and starts audio streaming."""
@@ -217,7 +231,7 @@ class VoicePipeline:
                     welcome_text = f"Hey! CourseWallah mein welcome hai yaar. Main {agent_name} hoon. Bolo, kya jaanna hai?"
         
         # Determine voice name directly from GEMINI_LIVE_VOICE config
-        voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Charon")
+        voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Aoede")
         logger.info(f"Resolved Gemini Live voice: {voice_name}")
 
         # Configure the Gemini Live session
@@ -226,16 +240,6 @@ class VoicePipeline:
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
-                )
-            ),
-            # VAD tuning to reduce echo-triggered self-interruptions
-            realtime_input_config=types.RealtimeInputConfig(
-                automatic_activity_detection=types.AutomaticActivityDetection(
-                    disabled=False,
-                    start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
-                    end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_LOW,
-                    prefix_padding_ms=200,   # Ignore first 200ms of audio onset (catches most echo)
-                    silence_duration_ms=500,  # Require 500ms silence to end a turn
                 )
             ),
             system_instruction=types.Content(
@@ -257,13 +261,23 @@ class VoicePipeline:
             # Start the background receiver task (listens for audio output and tool calls from Gemini)
             self.receiver_task = asyncio.create_task(self._receive_loop())
             
-            # Send the welcome message to trigger Gemini to speak first
-            if welcome_text:
-                if self.direction == "outbound":
-                    # Wait 1.5 seconds to allow the carrier phone line to fully connect the audio path
-                    logger.info("Outbound call: waiting 1.5 seconds for audio path to bridge before sending greeting...")
-                    await asyncio.sleep(1.5)
-                
+            # Flush any customer voice chunks that arrived while handshaking
+            if self.input_audio_buffer:
+                logger.info(f"Flushing {len(self.input_audio_buffer)} buffered customer audio chunks to Gemini Live.")
+                for chunk_8k in self.input_audio_buffer:
+                    pcm_16k = resample_8k_to_16k(chunk_8k)
+                    await self.session.send(
+                        input=types.LiveClientRealtimeInput(
+                            media_chunks=[types.Blob(
+                                data=pcm_16k,
+                                mime_type="audio/pcm;rate=16000"
+                            )]
+                        )
+                    )
+                self.input_audio_buffer.clear()
+            
+            # Send the welcome message to trigger Gemini to speak immediately
+            if welcome_text and not self.welcome_sent:
                 direction_context = "You just called this person." if self.direction == "outbound" else "This person just called you."
                 logger.info(f"Sending {self.direction} welcome prompt to Gemini Live: '{welcome_text}'")
                 self.transcript_log.append({"sender": "assistant", "text": welcome_text})
@@ -285,11 +299,14 @@ class VoicePipeline:
             self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz PCM from Exotel, applies smart mic gate, resamples, and sends to Gemini Live."""
-        if not self.active or not self.session:
+        """Receives 8kHz PCM from telephony, applies smart mic gate, resamples, and sends to Gemini Live."""
+        if not self.active:
             return
             
-        # Calculate decibel level of incoming 8kHz PCM (16-bit)
+        # If Gemini Live session is still handshaking, buffer incoming audio so no words are lost
+        if not self.session:
+            self.input_audio_buffer.append(pcm_8k_bytes)
+            return
         import array
         import math
         samples = array.array('h', pcm_8k_bytes)
@@ -404,7 +421,10 @@ class VoicePipeline:
                                             chunk = pcm_8k[i:i+chunk_size]
                                             if len(chunk) < chunk_size:
                                                 chunk = chunk + b"\x00" * (chunk_size - len(chunk))
-                                            await self.send_audio_callback(chunk)
+                                            if self.send_audio_callback:
+                                                await self.send_audio_callback(chunk)
+                                            else:
+                                                self.audio_output_buffer.append(chunk)
                                             
                                     if part.text:
                                         logger.info(f"Gemini Live text response: '{part.text}'")
@@ -667,39 +687,59 @@ TRANSCRIPT:
                     except Exception as e:
                         logger.error(f"Error generating call summary via Gemini: {e}")
 
-                # 2. Fetch recording URL from Exotel
+                # 2. Fetch recording URL from Plivo or Exotel
                 recording_url = None
                 if call_sid:
-                    logger.info(f"Fetching recording URL from Exotel for Call SID: {call_sid}...")
-                    api_key = os.getenv("EXOTEL_API_KEY")
-                    api_token = os.getenv("EXOTEL_API_TOKEN")
-                    account_sid = os.getenv("EXOTEL_ACCOUNT_SID")
-                    
-                    if api_key and api_token and account_sid:
+                    # Check Plivo first
+                    plivo_auth_id = os.getenv("PLIVO_AUTH_ID")
+                    plivo_auth_token = os.getenv("PLIVO_AUTH_TOKEN")
+                    if plivo_auth_id and plivo_auth_token:
+                        logger.info(f"Checking recording from Plivo for Call UUID: {call_sid}...")
                         import requests
-                        url = f"https://api.exotel.com/v1/Accounts/{account_sid}/Calls/{call_sid}.json"
-                        for attempt in range(4):
-                            # Progressive delay: wait 5s, 10s, 15s, 20s
-                            await asyncio.sleep(5 + attempt * 5)
-                            try:
-                                res = await asyncio.to_thread(
-                                    requests.get, url, auth=(api_key, api_token), timeout=10
-                                )
-                                if res.status_code == 200:
-                                    res_data = res.json()
-                                    call_info = res_data.get("Call", {})
-                                    rec_url = call_info.get("RecordingUrl")
-                                    if rec_url:
-                                        recording_url = rec_url
-                                        logger.info(f"Successfully retrieved Exotel recording URL: {recording_url}")
-                                        break
+                        p_url = f"https://api.plivo.com/v1/Account/{plivo_auth_id}/Recording/?call_uuid={call_sid}"
+                        try:
+                            res = await asyncio.to_thread(
+                                requests.get, p_url, auth=(plivo_auth_id, plivo_auth_token), timeout=10
+                            )
+                            if res.status_code == 200:
+                                rec_objects = res.json().get("objects", [])
+                                if rec_objects:
+                                    recording_url = rec_objects[0].get("recording_url")
+                                    logger.info(f"Successfully retrieved Plivo recording URL: {recording_url}")
+                        except Exception as e:
+                            logger.error(f"Error fetching Plivo recording: {e}")
+
+                    # Fallback to Exotel if not found on Plivo
+                    if not recording_url:
+                        api_key = os.getenv("EXOTEL_API_KEY")
+                        api_token = os.getenv("EXOTEL_API_TOKEN")
+                        account_sid = os.getenv("EXOTEL_ACCOUNT_SID")
+                        if api_key and api_token and account_sid:
+                            logger.info(f"Fetching recording URL from Exotel for Call SID: {call_sid}...")
+                            import requests
+                            url = f"https://api.exotel.com/v1/Accounts/{account_sid}/Calls/{call_sid}.json"
+                            for attempt in range(4):
+                                # Progressive delay: wait 5s, 10s, 15s, 20s
+                                await asyncio.sleep(5 + attempt * 5)
+                                try:
+                                    res = await asyncio.to_thread(
+                                        requests.get, url, auth=(api_key, api_token), timeout=10
+                                    )
+                                    if res.status_code == 200:
+                                        res_data = res.json()
+                                        call_info = res_data.get("Call", {})
+                                        rec_url = call_info.get("RecordingUrl")
+                                        if rec_url:
+                                            recording_url = rec_url
+                                            logger.info(f"Successfully retrieved Exotel recording URL: {recording_url}")
+                                            break
+                                        else:
+                                            logger.info(f"Attempt {attempt+1}: Call details found, but RecordingUrl not ready yet.")
                                     else:
-                                        logger.info(f"Attempt {attempt+1}: Call details found, but RecordingUrl not ready yet.")
-                                else:
-                                    logger.warning(f"Exotel details failed with status {res.status_code}: {res.text}")
-                            except Exception as e:
-                                logger.error(f"Error fetching call details: {e}")
-                                
+                                        logger.warning(f"Exotel details failed with status {res.status_code}: {res.text}")
+                                except Exception as e:
+                                    logger.error(f"Error fetching call details: {e}")
+                                    
                 # 3. Save to database
                 from db.database import add_conversation
                 add_conversation(

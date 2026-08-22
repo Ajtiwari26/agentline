@@ -11,6 +11,41 @@ from core.pipeline import VoicePipeline
 
 logger = logging.getLogger(__name__)
 
+def normalize_phone(p: str) -> str:
+    """Strips all spaces, dashes, and leading plus/zeroes to get canonical digits."""
+    digits = "".join(filter(str.isdigit, str(p or "")))
+    if digits.startswith("0") and len(digits) > 10:
+        digits = digits[1:]
+    return digits
+
+# In-memory registry for pre-warmed pipelines (keyed by call_uuid and canonical phone digits)
+PREWARMED_PIPELINES = {}
+
+async def prewarm_plivo_pipeline(phone: str, direction: str = "outbound", call_uuid: str = None) -> VoicePipeline:
+    """
+    Pre-warms Gemini Live session in the background as soon as the call connects/answers,
+    generating the greeting while the WebSocket handshake completes.
+    """
+    norm_phone = normalize_phone(phone)
+    key = call_uuid or norm_phone
+    if key in PREWARMED_PIPELINES and PREWARMED_PIPELINES[key].active:
+        logger.info(f"Pipeline already pre-warmed for key: {key}")
+        return PREWARMED_PIPELINES[key]
+        
+    logger.info(f"⚡ Pre-warming Gemini Live pipeline in background for {phone} (Norm: {norm_phone}, Call UUID: {call_uuid}, Direction: {direction})...")
+    pipeline = VoicePipeline(
+        phone="+" + norm_phone if not phone.startswith("+") else phone,
+        direction=direction,
+        call_sid=call_uuid
+    )
+    if call_uuid:
+        PREWARMED_PIPELINES[call_uuid] = pipeline
+    if norm_phone:
+        PREWARMED_PIPELINES[norm_phone] = pipeline
+        
+    asyncio.create_task(pipeline.start())
+    return pipeline
+
 async def handle_plivo_websocket(websocket: WebSocket):
     """
     Bidirectional streaming WebSocket handler for Plivo Audio Streams.
@@ -55,8 +90,9 @@ async def handle_plivo_websocket(websocket: WebSocket):
             pcm_base64 = base64.b64encode(pcm_bytes).decode("utf-8")
             play_msg = {
                 "event": "playAudio",
+                "streamId": stream_id,
                 "media": {
-                    "contentType": "audio/x-l16;rate=8000",
+                    "contentType": "audio/x-l16",
                     "sampleRate": 8000,
                     "payload": pcm_base64
                 }
@@ -94,17 +130,29 @@ async def handle_plivo_websocket(websocket: WebSocket):
                 )
                 
                 resolved_direction = query_direction
-                logger.info(f"Resolved Plivo caller phone: {caller_phone}, direction: {resolved_direction}, call_uuid: {call_uuid}")
+                norm_caller = normalize_phone(caller_phone)
+                norm_query = normalize_phone(query_phone)
                 
-                # Initialize VoicePipeline
-                pipeline = VoicePipeline(
-                    phone=caller_phone,
-                    direction=resolved_direction,
-                    send_audio_callback=send_audio_callback,
-                    call_sid=call_uuid
+                # Check for an already pre-warmed pipeline for this call
+                pipeline = (
+                    (PREWARMED_PIPELINES.pop(call_uuid, None) if call_uuid else None) or 
+                    (PREWARMED_PIPELINES.pop(norm_caller, None) if norm_caller else None) or 
+                    (PREWARMED_PIPELINES.pop(norm_query, None) if norm_query else None)
                 )
-                # Run pipeline startup in background task so WebSocket message loop continues
-                asyncio.create_task(pipeline.start())
+                
+                if pipeline and pipeline.active:
+                    logger.info(f"⚡ FAST-PATH: Binding to pre-warmed Gemini Live pipeline for {caller_phone} (Call UUID: {call_uuid})")
+                    pipeline.call_sid = call_uuid
+                    await pipeline.set_send_audio_callback(send_audio_callback)
+                else:
+                    logger.info(f"Standard path: Initializing new VoicePipeline for {caller_phone}...")
+                    pipeline = VoicePipeline(
+                        phone=caller_phone,
+                        direction=resolved_direction,
+                        send_audio_callback=send_audio_callback,
+                        call_sid=call_uuid
+                    )
+                    asyncio.create_task(pipeline.start())
                 
             elif event == "media":
                 incoming_count += 1

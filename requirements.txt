@@ -8,4 +8,6 @@ numpy
 requests
 pydantic
 websockets
+plivo
+python-multipart
 # pydbus (needed for Bluetooth D-Bus interactions on Linux, optional on macOS)

@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from cloud.plivo_handler import handle_plivo_websocket
+from cloud.plivo_handler import handle_plivo_websocket, prewarm_plivo_pipeline
 from cloud.ws_handler import handle_exotel_websocket
 from cloud.web_handler import handle_web_websocket
 from db.database import get_db, get_pending_callbacks
@@ -70,7 +70,7 @@ async def voicebot_endpoint(request: Request):
 async def plivo_answer_endpoint(request: Request):
     """
     Plivo Answer URL endpoint.
-    Returns Plivo XML with <Stream> element for bidirectional audio.
+    Returns valid Plivo XML with <Stream> element for bidirectional audio.
     """
     params = request.query_params
     if request.method == "POST":
@@ -88,18 +88,41 @@ async def plivo_answer_endpoint(request: Request):
         direction_param = params.get("Direction") or params.get("direction") or "inbound"
         call_uuid = params.get("CallUUID") or ""
 
-    direction = "outbound" if "outbound" in direction_param.lower() else "inbound"
+    # Clean and sanitize phone number
+    cleaned_phone = str(call_from).strip().replace(" ", "")
+    if not cleaned_phone.startswith("+"):
+        cleaned_phone = "+" + cleaned_phone
+
+    direction = "outbound" if "outbound" in str(direction_param).lower() else "inbound"
+    
+    # ⚡ Pre-warm Gemini Live pipeline immediately in the background
+    asyncio.create_task(prewarm_plivo_pipeline(cleaned_phone, direction=direction, call_uuid=call_uuid))
     
     host = request.headers.get("host")
     scheme = "wss" if request.url.scheme == "https" else "ws"
-    websocket_url = f"{scheme}://{host}/ws/plivo?phone={call_from}&direction={direction}&call_uuid={call_uuid}"
-    logger.info(f"Plivo call from {call_from} ({direction}) → Streaming to {websocket_url}")
+    
+    # XML requires &amp; instead of bare & in URL attributes and text nodes
+    websocket_url = f"{scheme}://{host}/ws/plivo?phone={cleaned_phone}&amp;direction={direction}&amp;call_uuid={call_uuid}"
+    logger.info(f"Plivo call from {cleaned_phone} ({direction}) → Streaming to {websocket_url}")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Stream bidirectional="true" keepCallAlive="true" contentType="audio/x-l16;rate=8000">{websocket_url}</Stream>
 </Response>"""
     return Response(content=xml_content, media_type="application/xml")
+
+@app.api_route("/plivo/prewarm", methods=["GET", "POST"])
+async def plivo_prewarm_endpoint(phone: str, direction: str = "outbound", call_uuid: str = None):
+    """Explicitly pre-warms a Gemini Live pipeline before placing an outbound call."""
+    cleaned_phone = str(phone).strip().replace(" ", "")
+    logger.info(f"API Trigger: Explicit pre-warm requested for {cleaned_phone}")
+    asyncio.create_task(prewarm_plivo_pipeline(cleaned_phone, direction=direction, call_uuid=call_uuid))
+    return {"status": "prewarming_initiated", "phone": cleaned_phone}
+
+@app.api_route("/plivo/hangup", methods=["GET", "POST"])
+async def plivo_hangup_endpoint(request: Request):
+    """Plivo Hangup callback endpoint."""
+    return Response(content="OK", media_type="text/plain")
 
 @app.websocket("/ws/plivo")
 async def plivo_websocket_route(websocket: WebSocket):

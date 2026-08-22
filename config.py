@@ -18,6 +18,7 @@ elif COMPANY == "coursewallah":
 else:
     AGENT_MODE = "portfolio"  # Default to portfolio mode (DeployMate)
 
+
 # Database Config
 MONGO_URI = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "agentline")
@@ -96,3 +97,4 @@ def get_gemini_client():
     else:
         client = genai.Client(api_key=GEMINI_API_KEY)
         return client, False
+

@@ -40,8 +40,13 @@ async def main():
         out_stream.write(pcm_bytes)
 
     target_phone = "9399250600"
+    direction = "outbound"
     if len(sys.argv) > 1:
         target_phone = sys.argv[1].strip()
+    if len(sys.argv) > 2:
+        direction = sys.argv[2].strip().lower()
+        if direction not in ["inbound", "outbound"]:
+            direction = "outbound"
         
     print(f"\n[1/3] Triggering call to {target_phone} via USB ADB...")
     trigger_dial(target_phone)
@@ -62,8 +67,8 @@ async def main():
         out_stream.close()
         return
 
-    print("\n[3/3] Call Connected! Launching Voice Agent pipeline...")
-    pipeline = VoicePipeline(phone=target_phone, send_audio_callback=send_audio_callback)
+    print(f"\n[3/3] Call Connected! Launching Voice Agent pipeline in '{direction}' mode...")
+    pipeline = VoicePipeline(phone=target_phone, direction=direction, send_audio_callback=send_audio_callback)
     
     # Input callback to capture audio from the phone microphone
     def audio_input_callback(indata, frames, time, status):

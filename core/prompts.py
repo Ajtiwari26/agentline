@@ -50,17 +50,24 @@ def load_kb():
             
     return DEPLOYMATE_KNOWLEDGE_BASE
 
-def build_system_prompt(lead_info=None, direction="outbound"):
+def build_system_prompt(lead_info=None, direction="outbound", target_agent="kavya"):
     import config
+    
+    # If explicitly requesting Eva (CTO of Unifold)
+    if target_agent.lower() == "eva" or (lead_info and lead_info.get("target_agent") == "eva"):
+        from core.eva_prompts import build_eva_system_prompt
+        return build_eva_system_prompt(lead_info, direction)
+
     company = getattr(config, "COMPANY", "deploymate").lower()
     if company == "bla_bli_blu":
         from core import bla_bli_blu_prompts
         return bla_bli_blu_prompts.build_system_prompt(lead_info, direction)
 
     kb = load_kb()
-    agent_name = getattr(config, "AGENT_NAME", kb.get("system", {}).get("agent_name", "Kavya"))
+    agent_name = "Kavya"  # Dedicated Frontline Support & Calling Assistant
     brand_name = kb.get("system", {}).get("brand_name", "DeployMate")
     persona = kb.get("system", {}).get("persona", "")
+
     
     # --- Shared sections (email capture + tools) ---
     email_capture_section = """
@@ -126,11 +133,13 @@ CRITICAL RULES:
 - Use natural Hinglish (mix of Hindi and English) like a friendly tech consultant.
 - INTERRUPTION RULE: If the user interrupts you, immediately stop. Acknowledge naturally (e.g., "Haan ji, bataiye", "Haan bataiye, aap kya keh rahe the?").
 - STRICT EMAIL CONFIRMATION: If you capture a new email or change an email, you MUST read it back chunk-by-chunk and wait for verbal confirmation BEFORE calling the send_email tool. You are strictly forbidden from calling the tool prematurely.
+- HANDOFF TO EVA (CTO OF UNIFOLD): If Ajay (Founder/CEO) or a client says "I want to talk to Eva", "Connect me to Eva", "Eva se baat karao", or asks for deep technical/development discussion about software projects or SDLC builds, say: "Bilkul! Main abhi aapko humari CTO Eva se connect karti hoon. Ek second hold kijiye." and seamlessly answer as Eva (CTO).
 - Address objections naturally:
   * Already have an IT team: {kb.get('objections', {}).get('already_have_team', {}).get('response', '')}
   * Cost: {kb.get('objections', {}).get('cost_price', {}).get('response', '')}
   * AI Safety/Trust: {kb.get('objections', {}).get('ai_trust', {}).get('response', '')}
 {email_capture_section}
+
 {tool_section_portfolio}
 """
     else:
