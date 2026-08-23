@@ -112,9 +112,10 @@ class GeminiAgent:
             
         # Initialize conversation session asynchronously
         self.chat = self.client.aio.chats.create(
-            model="gemini-2.5-flash", # Latest flash model for low latency
+            model=getattr(config, "AGENTLINE_MODEL", "gemini-3.1-flash-lite"), # Fast 3.1 Flash Lite for low latency
             history=initial_history,
             config=types.GenerateContentConfig(
+
                 system_instruction=self.system_prompt,
                 tools=[send_email, schedule_callback, log_lead_interest, query_product_info],
                 temperature=0.7,

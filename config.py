@@ -9,6 +9,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 COMPANY = os.getenv("COMPANY", "deploymate").lower()
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Aoede")
 AGENT_NAME = os.getenv("AGENT_NAME", "Kavya")
+AGENTLINE_MODEL = os.getenv("AGENTLINE_MODEL", "gemini-3.1-flash-lite")
+
 
 # Map COMPANY directly to AGENT_MODE
 if COMPANY == "bla_bli_blu":

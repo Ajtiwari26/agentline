@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import requests
-import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,8 +10,9 @@ def get_render_api_key():
     cli_cfg = os.path.expanduser("~/.render/cli.yaml")
     if os.path.exists(cli_cfg):
         with open(cli_cfg, "r") as f:
-            data = yaml.safe_load(f)
-            return data.get("api", {}).get("key", "")
+            for line in f:
+                if "key:" in line:
+                    return line.split("key:")[-1].strip().strip('"').strip("'")
     return os.getenv("RENDER_API_KEY", "")
 
 RENDER_API_KEY = get_render_api_key()
