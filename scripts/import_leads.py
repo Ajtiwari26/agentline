@@ -4,9 +4,10 @@ import pymongo
 from pymongo import MongoClient
 
 def run_import():
-    # 1. Connect to MongoDB Atlas
-    mongo_uri = "mongodb+srv://igsl:igsl@igsl.pvetwys.mongodb.net/?appName=igsl"
-    print(f"Connecting to MongoDB Atlas...")
+    # 1. Connect to MongoDB
+    mongo_uri = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
+    print("Connecting to MongoDB...")
+
     client = MongoClient(mongo_uri)
     db = client["agentline"]
     leads_collection = db["leads"]

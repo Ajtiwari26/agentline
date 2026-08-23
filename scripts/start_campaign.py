@@ -35,8 +35,9 @@ def trigger_outbound_call(target_phone, company_name):
         return None
 
 def main():
-    mongo_uri = "mongodb+srv://igsl:igsl@igsl.pvetwys.mongodb.net/?appName=igsl"
+    mongo_uri = os.getenv("MONGO_URI", os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
     client = MongoClient(mongo_uri)
+
     db = client["agentline"]
     leads_collection = db["leads"]
     
