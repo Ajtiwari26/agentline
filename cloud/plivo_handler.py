@@ -74,10 +74,13 @@ async def handle_plivo_websocket(websocket: WebSocket):
     early_audio_buffer = []
     
     # Define callback that VoicePipeline uses to send audio back to Plivo
+    outbound_audio_count = 0
     async def send_audio_callback(pcm_bytes: bytes):
-        nonlocal stream_id
+        nonlocal stream_id, outbound_audio_count
         if not stream_id:
             early_audio_buffer.append(pcm_bytes)
+            if len(early_audio_buffer) % 20 == 1:
+                logger.info(f"📦 Audio buffered (no stream_id yet): {len(early_audio_buffer)} packets in early_audio_buffer")
             return
             
         try:
@@ -101,6 +104,9 @@ async def handle_plivo_websocket(websocket: WebSocket):
                 }
             }
             await websocket.send_text(json.dumps(play_msg))
+            outbound_audio_count += 1
+            if outbound_audio_count <= 5 or outbound_audio_count % 50 == 0:
+                logger.info(f"🔊 Sent audio packet #{outbound_audio_count} to Plivo stream {stream_id}")
         except Exception as e:
             logger.error(f"Failed to send audio chunk to Plivo: {e}")
 

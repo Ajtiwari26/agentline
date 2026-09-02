@@ -195,15 +195,18 @@ class VoicePipeline:
 
     async def set_send_audio_callback(self, callback: Callable[[bytes], Coroutine[Any, Any, None]]):
         """Attaches the audio callback and immediately flushes any pre-warmed audio packets."""
+        logger.info(f"🔗 set_send_audio_callback called. audio_output_buffer has {len(self.audio_output_buffer)} chunks, session={'CONNECTED' if self.session else 'NONE'}, welcome_sent={self.welcome_sent}")
         self.send_audio_callback = callback
         if self.audio_output_buffer:
-            logger.info(f"Instant connection: Flushing {len(self.audio_output_buffer)} pre-warmed audio chunks to caller.")
+            logger.info(f"⚡ Instant connection: Flushing {len(self.audio_output_buffer)} pre-warmed audio chunks to caller.")
             for chunk in self.audio_output_buffer:
                 try:
                     await callback(chunk)
                 except Exception as e:
                     logger.error(f"Error flushing pre-buffered chunk: {e}")
             self.audio_output_buffer.clear()
+        else:
+            logger.info("📭 No pre-warmed audio in buffer yet — greeting will stream live as Gemini generates it.")
 
     async def start(self):
         """Connects to Gemini Live API and starts audio streaming."""
@@ -378,6 +381,7 @@ class VoicePipeline:
                                 continue
                                 
                             if sc.model_turn and sc.model_turn.parts:
+                                audio_chunk_count = 0
                                 for part in sc.model_turn.parts:
                                     if part.inline_data and part.inline_data.data:
                                         # Gemini outputs 24kHz PCM — downsample to 8kHz for telephony
@@ -394,12 +398,17 @@ class VoicePipeline:
                                                 chunk = chunk + b"\x00" * (chunk_size - len(chunk))
                                             if self.send_audio_callback:
                                                 await self.send_audio_callback(chunk)
+                                                audio_chunk_count += 1
                                             else:
                                                 self.audio_output_buffer.append(chunk)
+                                                audio_chunk_count += 1
                                             
                                     if part.text:
                                         logger.info(f"Gemini Live text response: '{part.text}'")
                                         self.transcript_log.append({"sender": "assistant", "text": part.text})
+                                if audio_chunk_count > 0:
+                                    dest = "callback" if self.send_audio_callback else "buffer"
+                                    logger.info(f"🔊 Streamed {audio_chunk_count} audio chunks to {dest}")
 
                             # Check if the model finished its turn
                             if sc.turn_complete:

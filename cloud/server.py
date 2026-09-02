@@ -35,6 +35,16 @@ async def startup_event():
 async def health_check():
     return {"status": "healthy", "mode": "cloud_inbound"}
 
+@app.get("/version")
+async def version_check():
+    """Returns the deployed commit hash so we can verify which code is running."""
+    import subprocess
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        commit = "unknown"
+    return {"commit": commit, "version": "2.1.0-vad"}
+
 
 @app.api_route("/voicebot", methods=["GET", "POST"])
 async def voicebot_endpoint(request: Request):
@@ -116,8 +126,15 @@ async def plivo_answer_endpoint(request: Request):
     if not cleaned_phone.startswith("+"):
         cleaned_phone = "+" + cleaned_phone
 
-    # ⚡ Pre-warm Gemini Live pipeline immediately in the background
-    asyncio.create_task(prewarm_plivo_pipeline(cleaned_phone, direction=direction, call_uuid=call_uuid))
+    # ⚡ Pre-warm Gemini Live pipeline in background ONLY if not already pre-warmed
+    # (trigger_plivo_call.py already calls /plivo/prewarm before dialing)
+    from cloud.plivo_handler import PREWARMED_PIPELINES, normalize_phone
+    norm = normalize_phone(cleaned_phone)
+    if norm not in PREWARMED_PIPELINES and call_uuid not in PREWARMED_PIPELINES:
+        logger.info(f"No existing pre-warmed pipeline found for {cleaned_phone}, starting one now.")
+        asyncio.create_task(prewarm_plivo_pipeline(cleaned_phone, direction=direction, call_uuid=call_uuid))
+    else:
+        logger.info(f"Pre-warmed pipeline already exists for {cleaned_phone}, skipping duplicate prewarm.")
     
     host = request.headers.get("host")
     scheme = "wss" if request.url.scheme == "https" else "ws"
