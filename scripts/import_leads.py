@@ -2,6 +2,9 @@ import csv
 import os
 import pymongo
 from pymongo import MongoClient
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def run_import():
     # 1. Connect to MongoDB
@@ -64,22 +67,34 @@ def run_import():
             
     print(f"Successfully imported/updated {imported_count} leads from CSV!")
     
-    # 3. Restore the personal number's lead context (9399250600)
+    # 3. Configure lead context for Ajay Tiwari (+919399250600) as Coaching Owner in Bhopal
     personal_phones = ["+919399250600", "09399250600", "9399250600"]
+    coaching_notes = (
+        "Company: Ajay Tutorials (Bhopal Coaching Center)\n"
+        "Role: Coaching Owner & Director\n"
+        "Sector: Coaching & Test Prep Institutes (Bhopal)\n"
+        "Address: Zone-II, MP Nagar, Bhopal\n"
+        "Overview: Premier competitive exam & board foundation coaching institute in Bhopal.\n"
+        "Trigger/Pitch Context: Pitch DeployMate AI Voice Agents for: "
+        "1) Instant 30-sec follow-up on student admission inquiries, "
+        "2) Automated parent-teacher counseling session booking, "
+        "3) WhatsApp bot for test score, rank cards & syllabus delivery, "
+        "4) Polite automated voice reminders for fee installments."
+    )
     for ph in personal_phones:
         leads_collection.update_one(
             {"phone": ph},
             {
                 "$set": {
-                    "name": "Ajay Tiwari",
+                    "name": "Ajay Tiwari (Ajay Tutorials)",
                     "email": "tiwariajay033@gmail.com",
-                    "notes": "Founder, Nukkad Tech Solutions. Personal developer testing contact.",
+                    "notes": coaching_notes,
                     "interest_level": "hot"
                 }
             },
             upsert=True
         )
-    print("Successfully restored personal contact profile (Ajay Tiwari) in DB!")
+    print("Successfully configured coaching institute lead profile (Ajay Tutorials) in DB!")
 
 if __name__ == "__main__":
     run_import()

@@ -195,12 +195,15 @@ CRITICAL RULES:
     if lead_info:
         lead_name = lead_info.get("name")
         lead_email = lead_info.get("email")
-        if lead_name or lead_email:
+        lead_notes = lead_info.get("notes")
+        if lead_name or lead_email or lead_notes:
             prompt += "\n\nLEAD CONTEXT:\n"
             if lead_name:
-                prompt += f"- Customer Name: {lead_name}\n"
+                prompt += f"- Customer / Company: {lead_name}\n"
             if lead_email:
                 prompt += f"- Customer Email: {lead_email}\n"
+            if lead_notes:
+                prompt += f"- Business Details & Pitch Context:\n{lead_notes}\n"
             prompt += "\nYou can use this lead info to personalize the call. Follow the EMAIL CAPTURE PROTOCOL above before sending any email.\n"
 
     return prompt

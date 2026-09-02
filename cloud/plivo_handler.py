@@ -12,10 +12,10 @@ from core.pipeline import VoicePipeline
 logger = logging.getLogger(__name__)
 
 def normalize_phone(p: str) -> str:
-    """Strips all spaces, dashes, and leading plus/zeroes to get canonical digits."""
+    """Strips all non-digits and returns last 10 digits for consistent matching."""
     digits = "".join(filter(str.isdigit, str(p or "")))
-    if digits.startswith("0") and len(digits) > 10:
-        digits = digits[1:]
+    if len(digits) > 10:
+        return digits[-10:]
     return digits
 
 # In-memory registry for pre-warmed pipelines (keyed by call_uuid and canonical phone digits)
@@ -32,9 +32,10 @@ async def prewarm_plivo_pipeline(phone: str, direction: str = "outbound", call_u
         logger.info(f"Pipeline already pre-warmed for key: {key}")
         return PREWARMED_PIPELINES[key]
         
-    logger.info(f"⚡ Pre-warming Gemini Live pipeline in background for {phone} (Norm: {norm_phone}, Call UUID: {call_uuid}, Direction: {direction})...")
+    formatted_phone = "+91" + norm_phone if len(norm_phone) == 10 else ("+" + norm_phone if not phone.startswith("+") else phone)
+    logger.info(f"⚡ Pre-warming Gemini Live pipeline in background for {formatted_phone} (Norm: {norm_phone}, Call UUID: {call_uuid}, Direction: {direction})...")
     pipeline = VoicePipeline(
-        phone="+" + norm_phone if not phone.startswith("+") else phone,
+        phone=formatted_phone,
         direction=direction,
         call_sid=call_uuid
     )
@@ -62,7 +63,7 @@ async def handle_plivo_websocket(websocket: WebSocket):
     await websocket.accept()
     logger.info("Plivo WebSocket connection established.")
     
-    # Read parameters passed in the WebSocket URL query string (if provided in XML)
+    # Read parameters passed in the WebSocket URL query string
     query_phone = websocket.query_params.get("phone")
     query_direction = websocket.query_params.get("direction", "inbound")
     
@@ -70,11 +71,13 @@ async def handle_plivo_websocket(websocket: WebSocket):
     call_uuid = None
     pipeline = None
     incoming_count = 0
+    early_audio_buffer = []
     
     # Define callback that VoicePipeline uses to send audio back to Plivo
     async def send_audio_callback(pcm_bytes: bytes):
         nonlocal stream_id
         if not stream_id:
+            early_audio_buffer.append(pcm_bytes)
             return
             
         try:
@@ -122,12 +125,12 @@ async def handle_plivo_websocket(websocket: WebSocket):
                 call_uuid = start_obj.get("callId") or start_obj.get("callUuid") or start_obj.get("call_uuid") or data.get("callUuid")
                 logger.info(f"Plivo stream started with streamId: {stream_id}, callId: {call_uuid}")
                 
-                # Fetch phone number directly from start payload or query string
-                caller_phone = (
-                    start_obj.get("from") or 
-                    query_phone or 
-                    "+919999999999"
-                )
+                # Resolve customer phone:
+                # In outbound calls, customer is 'to' or query_phone. In inbound calls, customer is 'from' or query_phone.
+                if query_direction == "outbound":
+                    caller_phone = query_phone or start_obj.get("to") or "+919999999999"
+                else:
+                    caller_phone = start_obj.get("from") or query_phone or "+919999999999"
                 
                 resolved_direction = query_direction
                 norm_caller = normalize_phone(caller_phone)
@@ -141,11 +144,12 @@ async def handle_plivo_websocket(websocket: WebSocket):
                 )
                 
                 if pipeline and pipeline.active:
-                    logger.info(f"⚡ FAST-PATH: Binding to pre-warmed Gemini Live pipeline for {caller_phone} (Call UUID: {call_uuid})")
+                    logger.info(f"⚡ FAST-PATH: Binding to pre-warmed Gemini Live pipeline for {caller_phone} (Call UUID: {call_uuid}, Direction: {resolved_direction})")
                     pipeline.call_sid = call_uuid
+                    pipeline.direction = resolved_direction
                     await pipeline.set_send_audio_callback(send_audio_callback)
                 else:
-                    logger.info(f"Standard path: Initializing new VoicePipeline for {caller_phone}...")
+                    logger.info(f"Standard path: Initializing new VoicePipeline for {caller_phone} (Direction: {resolved_direction})...")
                     pipeline = VoicePipeline(
                         phone=caller_phone,
                         direction=resolved_direction,
@@ -153,6 +157,13 @@ async def handle_plivo_websocket(websocket: WebSocket):
                         call_sid=call_uuid
                     )
                     asyncio.create_task(pipeline.start())
+
+                # Flush any early generated audio chunks immediately down the WebSocket
+                if early_audio_buffer:
+                    logger.info(f"⚡ Instant playback: Flushing {len(early_audio_buffer)} early-generated audio packets to Plivo stream {stream_id}")
+                    for chunk in early_audio_buffer:
+                        await send_audio_callback(chunk)
+                    early_audio_buffer.clear()
                 
             elif event == "media":
                 incoming_count += 1

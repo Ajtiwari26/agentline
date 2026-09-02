@@ -154,6 +154,7 @@ class VoicePipeline:
         except Exception as e:
             logger.error(f"Failed to load lead context from DB: {e}")
             
+        self.lead_info = lead_info
         # Build system prompt from knowledge base, lead context, and call direction
         self.system_prompt = build_system_prompt(lead_info, direction=self.direction)
         
@@ -161,9 +162,9 @@ class VoicePipeline:
         import config
         self.client, is_vertex = config.get_gemini_client()
         
-        # Determine the model name dynamically (Vertex AI vs AI Studio Live API)
-        self.model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.5-flash-native-audio-latest"
-        self.summary_model_name = "gemini-2.5-flash" if is_vertex else "gemini-1.5-flash"
+        # Determine the model name dynamically from config
+        self.model_name = getattr(config, "GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
+        self.summary_model_name = "gemini-2.5-flash"
         logger.info(f"Using Gemini Live model: {self.model_name}, Summary model: {self.summary_model_name}")
         
         # Interruption and Noise Gate states
@@ -215,8 +216,12 @@ class VoicePipeline:
         agent_name = getattr(config, "AGENT_NAME", "Kavya")
         
         if self.direction == "outbound":
-            welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", f"Hey! {agent_name} here from DeployMate. Kaise ho aap?")
-            welcome_text = welcome_text.replace("Ajay", agent_name)
+            lead_name = self.lead_info.get("name") if self.lead_info else None
+            if lead_name:
+                welcome_text = f"Hey! {agent_name} here from DeployMate. Main {lead_name} ke liye call kar rahi thi. Kaise ho aap?"
+            else:
+                welcome_text = kb.get("conversation_stages", {}).get("greeting", {}).get("script", f"Hey! {agent_name} here from DeployMate. Kaise ho aap?")
+                welcome_text = welcome_text.replace("Ajay", agent_name)
         elif self.direction == "inbound":
             # For inbound calls, use a receptive welcome greeting based on active company
             if company == "bla_bli_blu":

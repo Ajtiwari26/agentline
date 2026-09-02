@@ -73,28 +73,49 @@ async def plivo_answer_endpoint(request: Request):
     Returns valid Plivo XML with <Stream> element for bidirectional audio.
     """
     params = request.query_params
+    query_direction = params.get("direction") or params.get("Direction")
+    query_phone = params.get("phone") or params.get("Phone")
+    
+    form_data = {}
     if request.method == "POST":
         try:
-            form_data = await request.form()
-            call_from = form_data.get("From") or params.get("From") or params.get("phone") or "+919999999999"
-            direction_param = form_data.get("Direction") or params.get("Direction") or params.get("direction") or "inbound"
-            call_uuid = form_data.get("CallUUID") or params.get("CallUUID") or ""
+            form = await request.form()
+            form_data = dict(form)
         except Exception:
-            call_from = params.get("From") or params.get("phone") or "+919999999999"
-            direction_param = params.get("Direction") or params.get("direction") or "inbound"
-            call_uuid = params.get("CallUUID") or ""
+            pass
+        if not form_data:
+            try:
+                body_bytes = await request.body()
+                if body_bytes:
+                    import urllib.parse
+                    parsed = urllib.parse.parse_qs(body_bytes.decode("utf-8"))
+                    form_data = {k: v[0] if isinstance(v, list) and len(v) == 1 else v for k, v in parsed.items()}
+            except Exception:
+                pass
+        if not form_data:
+            try:
+                form_data = await request.json()
+            except Exception:
+                pass
+
+    # Resolve direction: explicit query parameter 'direction=outbound' takes highest priority
+    direction_val = query_direction or form_data.get("Direction") or form_data.get("direction") or "inbound"
+    direction = "outbound" if "outbound" in str(direction_val).lower() else "inbound"
+
+    # Resolve phone number:
+    # On outbound calls, the lead is query_phone or 'To'. On inbound calls, the lead is 'From'.
+    if direction == "outbound":
+        call_phone = query_phone or form_data.get("To") or form_data.get("to") or params.get("to") or form_data.get("From") or form_data.get("from") or "+919999999999"
     else:
-        call_from = params.get("From") or params.get("phone") or "+919999999999"
-        direction_param = params.get("Direction") or params.get("direction") or "inbound"
-        call_uuid = params.get("CallUUID") or ""
+        call_phone = form_data.get("From") or form_data.get("from") or query_phone or params.get("From") or params.get("from") or "+919999999999"
+        
+    call_uuid = form_data.get("CallUUID") or form_data.get("call_uuid") or form_data.get("CallUuid") or params.get("CallUUID") or params.get("call_uuid") or ""
 
     # Clean and sanitize phone number
-    cleaned_phone = str(call_from).strip().replace(" ", "")
+    cleaned_phone = str(call_phone).strip().replace(" ", "")
     if not cleaned_phone.startswith("+"):
         cleaned_phone = "+" + cleaned_phone
 
-    direction = "outbound" if "outbound" in str(direction_param).lower() else "inbound"
-    
     # ⚡ Pre-warm Gemini Live pipeline immediately in the background
     asyncio.create_task(prewarm_plivo_pipeline(cleaned_phone, direction=direction, call_uuid=call_uuid))
     
@@ -103,7 +124,7 @@ async def plivo_answer_endpoint(request: Request):
     
     # XML requires &amp; instead of bare & in URL attributes and text nodes
     websocket_url = f"{scheme}://{host}/ws/plivo?phone={cleaned_phone}&amp;direction={direction}&amp;call_uuid={call_uuid}"
-    logger.info(f"Plivo call from {cleaned_phone} ({direction}) → Streaming to {websocket_url}")
+    logger.info(f"Plivo call for {cleaned_phone} (Resolved Direction: {direction}) → Streaming to {websocket_url}")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>

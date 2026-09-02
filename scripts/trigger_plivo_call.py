@@ -33,17 +33,17 @@ def trigger_plivo_call(target_phone: str, server_url: str = None, caller_id: str
         print("Warning: PLIVO_PHONE_NUMBER not set in .env. Plivo requires a valid 'from' number or Caller ID.")
         print("Please configure PLIVO_PHONE_NUMBER in .env.")
 
-    base_url = server_url or os.getenv("BACKEND_URL", "https://agentline-backend.onrender.com")
+    base_url = server_url or os.getenv("BACKEND_URL", "https://agentline.onrender.com")
     base_url = base_url.rstrip("/")
     answer_url = f"{base_url}/plivo/answer?direction=outbound&phone={cleaned_target}"
 
     # Pre-warm backend Gemini Live pipeline immediately while Plivo dials the carrier
     try:
         prewarm_url = f"{base_url}/plivo/prewarm?phone={cleaned_target}&direction=outbound"
-        requests.post(prewarm_url, timeout=1.5)
-        print(f"⚡ Pre-warming initiated on backend for {cleaned_target}")
+        res_pw = requests.post(prewarm_url, timeout=3.0)
+        print(f"⚡ Pre-warming initiated on backend for {cleaned_target} (Status: {res_pw.status_code})")
     except Exception as e:
-        pass
+        print(f"⚠️ Pre-warm request warning: {e}")
 
     url = f"https://api.plivo.com/v1/Account/{auth_id}/Call/"
     payload = {
