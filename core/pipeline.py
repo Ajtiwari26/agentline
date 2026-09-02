@@ -239,12 +239,21 @@ class VoicePipeline:
         voice_name = getattr(config, "GEMINI_LIVE_VOICE", "Aoede")
         logger.info(f"Resolved Gemini Live voice: {voice_name}")
 
-        # Configure the Gemini Live session
+        # Configure the Gemini Live session with Automatic Activity Detection
         live_config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
+                )
+            ),
+            realtime_input_config=types.RealtimeInputConfig(
+                automatic_activity_detection=types.AutomaticActivityDetection(
+                    disabled=False,
+                    start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                    end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_LOW,
+                    prefix_padding_ms=100,
+                    silence_duration_ms=400,
                 )
             ),
             system_instruction=types.Content(
@@ -283,7 +292,11 @@ class VoicePipeline:
             
             # Send the welcome message to trigger Gemini to speak immediately
             if welcome_text and not self.welcome_sent:
-                direction_context = "You just called this person." if self.direction == "outbound" else "This person just called you."
+                direction_context = (
+                    f"You placed an outbound call to this client ({self.phone}). You are speaking first to initiate the call."
+                    if self.direction == "outbound"
+                    else "This person just called your incoming support number."
+                )
                 logger.info(f"Sending {self.direction} welcome prompt to Gemini Live: '{welcome_text}'")
                 self.transcript_log.append({"sender": "assistant", "text": welcome_text})
                 await self.session.send(
@@ -291,7 +304,7 @@ class VoicePipeline:
                         turns=[types.Content(
                             role="user",
                             parts=[types.Part.from_text(
-                                text=f"{direction_context} Start the conversation by saying exactly this greeting (adapt naturally but keep the essence): {welcome_text}"
+                                text=f"{direction_context} Start the conversation now by saying: {welcome_text}"
                             )]
                         )],
                         turn_complete=True
@@ -304,63 +317,28 @@ class VoicePipeline:
             self.active = False
 
     async def handle_incoming_audio(self, pcm_8k_bytes: bytes):
-        """Receives 8kHz PCM from telephony, applies smart mic gate, resamples, and sends to Gemini Live."""
+        """Receives 8kHz PCM from telephony, resamples to 16kHz, and streams to Gemini Live."""
         if not self.active:
             return
             
-        # If Gemini Live session is still handshaking, buffer incoming audio so no words are lost
+        # If Gemini Live session is still handshaking, buffer incoming audio
         if not self.session:
             self.input_audio_buffer.append(pcm_8k_bytes)
             return
-        import array
-        import math
-        samples = array.array('h', pcm_8k_bytes)
-        db = -100.0
-        if len(samples) > 0:
-            sum_squares = sum(float(s) * s for s in samples)
-            rms = math.sqrt(sum_squares / len(samples))
-            db = 20 * math.log10(rms / 32768.0) if rms > 0 else -100.0
-        
-        # ── DIAGNOSTIC: Log dB levels every 50 packets so we can calibrate thresholds ──
-        self.audio_packet_count += 1
-        if self.audio_packet_count % 50 == 0:
-            gate_status = "SPEAKING_GATE" if self.is_speaking else "LISTENING_OPEN"
-            logger.info(f"Audio dB: {db:.1f} | State: {gate_status} | is_speaking={self.is_speaking} | Pkt#{self.audio_packet_count}")
-        
-        # ── SMART MIC GATE (Echo Prevention) ──
-        # While the agent is speaking, the phone mic picks up the agent's own voice
-        # and Exotel sends it back to us. We MUST drop this echoed audio to prevent
-        # Gemini from thinking the user is talking and interrupting itself.
-        # 
-        # However, we still allow genuinely LOUD audio through (a real human interruption)
-        # so the user can still barge-in by speaking over the agent.
-        if self.is_speaking:
-            if db < self.barge_in_threshold_db:
-                # Audio is too quiet — likely echo from the agent's own voice. Drop it.
-                return
-            else:
-                # Audio is loud enough to be a real human interruption. Let it through
-                # and transition the state immediately to listening so further chunks pass.
-                logger.info(f"Barge-in detected while agent speaking (dB: {db:.1f}). Disabling speaking gate.")
-                self.is_speaking = False
-                self.interrupted = True
-                # Send clear command to Exotel to flush its playback buffer
-                await self.send_audio_callback(b"CLEAR_STREAM")
             
         try:
             # Resample 8kHz → 16kHz for Gemini Live input
             pcm_16k = resample_8k_to_16k(pcm_8k_bytes)
             
-            # Send raw audio to Gemini Live session
-            if self.session:
-                await self.session.send(
-                    input=types.LiveClientRealtimeInput(
-                        media_chunks=[types.Blob(
-                            data=pcm_16k,
-                            mime_type="audio/pcm;rate=16000"
-                        )]
-                    )
+            # Send raw audio directly to Gemini Live session
+            await self.session.send(
+                input=types.LiveClientRealtimeInput(
+                    media_chunks=[types.Blob(
+                        data=pcm_16k,
+                        mime_type="audio/pcm;rate=16000"
+                    )]
                 )
+            )
         except Exception as e:
             logger.error(f"Error sending audio to Gemini Live: {e}")
             # If the session is closed/unavailable, trigger automatic reconnection in the background
@@ -393,35 +371,23 @@ class VoicePipeline:
                                         
                             # Handle Gemini interruption
                             if sc.interrupted:
-                                logger.info("Gemini Live session was interrupted by user voice.")
-                                self.interrupted = True
-                                self.is_speaking = False  # Agent stopped speaking due to interruption
-                                # Send clear command to Exotel to flush its playback buffer
-                                await self.send_audio_callback(b"CLEAR_STREAM")
-                                continue
-                                
-                            # Reset interruption flag on new model content
-                            if sc.model_turn:
-                                self.interrupted = False
-                                self.is_speaking = True  # Agent is now generating/speaking audio
-                                
-                            if self.interrupted:
-                                # Discard any leftover packets if we are interrupted
+                                logger.info("Gemini Live session detected interruption by user voice.")
+                                # Send clear command to flush telephony playback buffer
+                                if self.send_audio_callback:
+                                    await self.send_audio_callback(b"CLEAR_STREAM")
                                 continue
                                 
                             if sc.model_turn and sc.model_turn.parts:
                                 for part in sc.model_turn.parts:
-                                    if self.interrupted:
-                                        break
                                     if part.inline_data and part.inline_data.data:
-                                        # Gemini outputs 24kHz PCM — downsample to 8kHz for Exotel
+                                        # Gemini outputs 24kHz PCM — downsample to 8kHz for telephony
                                         pcm_24k = part.inline_data.data
                                         pcm_8k = resample_24k_to_8k(pcm_24k)
                                         
-                                        # Stream 320-byte chunks (20ms at 8kHz) to Exotel
+                                        # Stream 320-byte chunks (20ms at 8kHz) to telephony
                                         chunk_size = 320
                                         for i in range(0, len(pcm_8k), chunk_size):
-                                            if not self.active or self.interrupted:
+                                            if not self.active:
                                                 break
                                             chunk = pcm_8k[i:i+chunk_size]
                                             if len(chunk) < chunk_size:
@@ -438,7 +404,6 @@ class VoicePipeline:
                             # Check if the model finished its turn
                             if sc.turn_complete:
                                 logger.info("Gemini Live turn complete.")
-                                self.is_speaking = False  # Agent finished speaking, now listening
                         
                         # Handle tool calls from Gemini
                         if response.tool_call:
