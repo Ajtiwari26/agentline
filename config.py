@@ -9,7 +9,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 COMPANY = os.getenv("COMPANY", "deploymate").lower()
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Aoede")
 AGENT_NAME = os.getenv("AGENT_NAME", "Kavya")
-AGENTLINE_MODEL = os.getenv("AGENTLINE_MODEL", "gemini-3.1-flash-lite")
+AGENTLINE_MODEL = os.getenv("AGENTLINE_MODEL", "gemini-3.1-flash-live-preview")
+GEMINI_LIVE_MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
 
 
 # Map COMPANY directly to AGENT_MODE
@@ -39,11 +40,12 @@ PLIVO_AUTH_ID = os.getenv("PLIVO_AUTH_ID", "")
 PLIVO_AUTH_TOKEN = os.getenv("PLIVO_AUTH_TOKEN", "")
 PLIVO_PHONE_NUMBER = os.getenv("PLIVO_PHONE_NUMBER", "")
 
+
 def validate_config():
     """Validates that crucial environment variables are present."""
     missing = []
-    if not GEMINI_API_KEY and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-        missing.append("GEMINI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS")
+    if not GEMINI_API_KEY:
+        missing.append("GEMINI_API_KEY")
     if not PLIVO_AUTH_ID or not PLIVO_AUTH_TOKEN:
         missing.append("PLIVO_AUTH_ID / PLIVO_AUTH_TOKEN")
     if missing:
@@ -51,52 +53,27 @@ def validate_config():
         return False
     return True
 
+
 def get_gemini_client():
-    """Initializes and returns a Google GenAI Client.
-    
-    Tries Vertex AI if GCP credentials (via GOOGLE_APPLICATION_CREDENTIALS or
-    GCP_SERVICE_ACCOUNT_JSON) are present. Otherwise, falls back to AI Studio key.
-    
+    """Initializes and returns a Google GenAI Client using the direct Gemini API Key.
+
     Returns:
         tuple: (client, is_vertex)
     """
     from google import genai
-    from google.oauth2 import service_account
-    import json
-    
-    sa_json_str = os.getenv("GCP_SERVICE_ACCOUNT_JSON", "")
-    sa_key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-    project_id = os.getenv("GCP_PROJECT", "igsl-67e70")
-    location = os.getenv("GCP_LOCATION", "us-central1")
-    
-    credentials = None
-    is_vertex = False
-    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-    
-    if sa_json_str:
-        try:
-            sa_info = json.loads(sa_json_str)
-            credentials = service_account.Credentials.from_service_account_info(sa_info, scopes=scopes)
-            is_vertex = True
-        except Exception:
-            pass
-            
-    if not is_vertex and sa_key_path and os.path.exists(sa_key_path):
-        try:
-            credentials = service_account.Credentials.from_service_account_file(sa_key_path, scopes=scopes)
-            is_vertex = True
-        except Exception:
-            pass
-            
-    if is_vertex and credentials:
-        client = genai.Client(
-            vertexai=True,
-            project=project_id,
-            location=location,
-            credentials=credentials
-        )
-        return client, True
-    else:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        return client, False
 
+    # Explicitly unset any GCP/Vertex AI credentials that would override the API key.
+    # The google-genai SDK auto-detects these and switches to Vertex AI mode,
+    # which breaks Live API calls if the GCP project doesn't have the model enabled.
+    for env_var in [
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "GCP_SERVICE_ACCOUNT_JSON",
+        "GCP_PROJECT",
+        "GCP_LOCATION",
+        "GOOGLE_CLOUD_PROJECT",
+        "GOOGLE_CLOUD_LOCATION",
+    ]:
+        os.environ.pop(env_var, None)
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    return client, False

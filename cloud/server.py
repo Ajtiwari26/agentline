@@ -13,9 +13,24 @@ from cloud.ws_handler import handle_exotel_websocket
 from cloud.web_handler import handle_web_websocket
 from db.database import get_db, get_pending_callbacks
 
-# Set up logging
+# Set up logging with an in-memory ring buffer for remote debugging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+# In-memory ring buffer to capture recent log lines for remote debugging
+import collections
+_log_buffer = collections.deque(maxlen=200)
+
+class _BufferHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            _log_buffer.append(self.format(record))
+        except Exception:
+            pass
+
+_bh = _BufferHandler()
+_bh.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+logging.getLogger().addHandler(_bh)  # Attach to root logger to capture ALL modules
 
 app = FastAPI(title="AgentLine Telephony Cloud Backend")
 
