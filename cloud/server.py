@@ -52,13 +52,18 @@ async def health_check():
 
 @app.get("/version")
 async def version_check():
-    """Returns the deployed commit hash so we can verify which code is running."""
+    """Returns the deployed commit hash and active model so we can verify which code is running."""
     import subprocess
     try:
         commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL).decode().strip()
     except Exception:
         commit = "unknown"
-    return {"commit": commit, "version": "2.1.0-vad"}
+    return {
+        "commit": commit,
+        "version": "3.8.0-live",
+        "live_model": config.GEMINI_LIVE_MODEL,
+        "key_preview": f"{config.GEMINI_API_KEY[:10]}...{config.GEMINI_API_KEY[-4:]}" if config.GEMINI_API_KEY else "none"
+    }
 
 
 @app.api_route("/voicebot", methods=["GET", "POST"])
