@@ -15,8 +15,7 @@ async def test_live_api():
     client, is_vertex = config.get_gemini_client()
     print(f"Mode: {'Vertex AI' if is_vertex else 'AI Studio API Key'}")
     
-    # Select appropriate model based on Vertex AI vs AI Studio
-    model_name = "gemini-live-2.5-flash-native-audio" if is_vertex else "gemini-2.5-flash-native-audio-latest"
+    model_name = getattr(config, "GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
     print(f"Target Model: {model_name}")
     
     live_config = types.LiveConnectConfig(

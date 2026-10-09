@@ -171,11 +171,11 @@ class WebVoicePipeline:
         if not self.active or not self.session:
             return
         try:
-            await self.session.send(
-                input=types.LiveClientRealtimeInput(
-                    media_chunks=[types.Blob(data=pcm_16k, mime_type="audio/pcm;rate=16000")]
-                )
-            )
+            blob = types.Blob(data=pcm_16k, mime_type="audio/pcm;rate=16000")
+            if hasattr(self.session, "send_realtime_input"):
+                await self.session.send_realtime_input(audio=blob)
+            else:
+                await self.session.send(input=types.LiveClientRealtimeInput(audio=blob))
         except Exception as e:
             logger.error(f"[web:{self.session_id}] error sending audio to Gemini: {e}")
 

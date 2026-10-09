@@ -62,6 +62,7 @@ async def handle_web_websocket(websocket: WebSocket):
         except asyncio.CancelledError:
             pass
 
+    audio_packet_count = 0
     try:
         while True:
             try:
@@ -92,6 +93,9 @@ async def handle_web_websocket(websocket: WebSocket):
                         pcm = base64.b64decode(payload)
                     except (TypeError, ValueError):
                         continue
+                    audio_packet_count += 1
+                    if audio_packet_count % 20 == 1:
+                        logger.info(f"Received audio packet #{audio_packet_count} ({len(pcm)} bytes) from browser mic.")
                     await pipeline.handle_incoming_audio(pcm)
 
             elif msg_type == "text":

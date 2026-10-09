@@ -52,21 +52,26 @@ def sync_env_vars():
     sa_json_str = json.dumps(json.load(open(sa_file)))
     
     env_vars = [
-        {"key": "COMPANY", "value": "deploymate"},
-        {"key": "GEMINI_LIVE_VOICE", "value": "Aoede"},
-        {"key": "AGENT_NAME", "value": "Kavya"},
-        {"key": "GCP_PROJECT", "value": "igsl-67e70"},
-        {"key": "GCP_LOCATION", "value": "us-central1"},
+        {"key": "COMPANY", "value": os.getenv("COMPANY", "deploymate")},
+        {"key": "GEMINI_LIVE_VOICE", "value": os.getenv("GEMINI_LIVE_VOICE", "Aoede")},
+        {"key": "AGENT_NAME", "value": os.getenv("AGENT_NAME", "Kavya")},
+        {"key": "AGENTLINE_MODEL", "value": os.getenv("AGENTLINE_MODEL", "gemini-3.1-flash-lite")},
+        {"key": "GCP_PROJECT", "value": os.getenv("GCP_PROJECT", "project-f806ae9f-e208-41f0-b87")},
+        {"key": "GCP_LOCATION", "value": os.getenv("GCP_LOCATION", "global")},
         {"key": "GCP_SERVICE_ACCOUNT_JSON", "value": sa_json_str},
         {"key": "GEMINI_API_KEY", "value": os.getenv("GEMINI_API_KEY", "")},
         {"key": "PLIVO_AUTH_ID", "value": os.getenv("PLIVO_AUTH_ID", "")},
         {"key": "PLIVO_AUTH_TOKEN", "value": os.getenv("PLIVO_AUTH_TOKEN", "")},
         {"key": "PLIVO_PHONE_NUMBER", "value": os.getenv("PLIVO_PHONE_NUMBER", "")},
         {"key": "MONGO_URI", "value": os.getenv("MONGO_URI", "")},
+        {"key": "DEPLOYMATE_MONGO_URI", "value": os.getenv("DEPLOYMATE_MONGO_URI", "")},
         {"key": "SMTP_USER", "value": os.getenv("SMTP_USER", "ajay.nukkadtechsolutions@gmail.com")},
-        {"key": "SMTP_PASSWORD", "value": os.getenv("SMTP_PASSWORD", "dmck zhjp xnsb rcji")},
-        {"key": "EMAIL_FROM", "value": os.getenv("EMAIL_FROM", "ajay.nukkadtechsolutions@gmail.com")}
+        {"key": "SMTP_PASSWORD", "value": os.getenv("SMTP_PASSWORD", "")},
+        {"key": "EMAIL_FROM", "value": os.getenv("EMAIL_FROM", "ajay.nukkadtechsolutions@gmail.com")},
+        {"key": "DEPLOYMATE_SMTP_USER", "value": os.getenv("DEPLOYMATE_SMTP_USER", "ajay.deploymate@gmail.com")},
+        {"key": "DEPLOYMATE_SMTP_PASSWORD", "value": os.getenv("DEPLOYMATE_SMTP_PASSWORD", "")}
     ]
+
     
     url = f"https://api.render.com/v1/services/{service_id}/env-vars"
     resp = requests.put(url, headers=headers, json=env_vars)
