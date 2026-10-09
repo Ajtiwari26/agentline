@@ -185,12 +185,13 @@ class WebVoicePipeline:
         if not self.active or not self.session or not text.strip():
             return
         self.transcript_log.append({"sender": "user", "text": text.strip()})
-        await self.session.send(
-            input=types.LiveClientContent(
-                turns=[types.Content(role="user", parts=[types.Part.from_text(text=text.strip())])],
-                turn_complete=True,
-            )
-        )
+        try:
+            if hasattr(self.session, "send_realtime_input"):
+                await self.session.send_realtime_input(text=text.strip())
+            else:
+                await self.session.send(input=types.LiveClientRealtimeInput(text=text.strip()))
+        except Exception as e:
+            logger.error(f"[web:{self.session_id}] error sending realtime text to Gemini: {e}")
 
     async def _flush_user_text(self):
         if self._pending_user_text.strip():
