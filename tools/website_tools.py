@@ -17,6 +17,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.transliteration import devanagari_to_english
 
 logger = logging.getLogger(__name__)
 
@@ -57,16 +58,21 @@ def save_website_lead(
     if interest_level not in ("hot", "warm", "cold"):
         interest_level = "warm"
 
+    name_clean = devanagari_to_english(name).strip() if name else ""
+    company_clean = devanagari_to_english(company).strip() if company else ""
+    requirement_clean = devanagari_to_english(requirement).strip() if requirement else ""
+    lang_clean = devanagari_to_english(language).strip() if language else "hindi"
+
     data = {
         "tag": "website inbound agent lead",
         "source": "website-inbound-voice-agent",
-        "name": name or None,
+        "name": name_clean or None,
         "email": email or None,
         "phone": phone or None,
-        "company": company or None,
-        "requirement": requirement or None,
+        "company": company_clean or None,
+        "requirement": requirement_clean or None,
         "interestLevel": interest_level,
-        "language": language or None,
+        "language": lang_clean or None,
         "sessionId": session_id or None,
     }
     data = {k: v for k, v in data.items() if v is not None}
@@ -105,12 +111,20 @@ def attach_transcript_to_lead(session_id: str, transcript: list, duration_second
     """
     if not session_id:
         return
+    clean_transcript = []
+    if transcript:
+        for t in transcript:
+            c_t = dict(t)
+            if "text" in c_t and isinstance(c_t["text"], str):
+                c_t["text"] = devanagari_to_english(c_t["text"]).strip()
+            clean_transcript.append(c_t)
+
     db = _get_deploymate_db()
     db.leads.update_one(
         {"kind": "website inbound agent lead", "data.sessionId": session_id},
         {
             "$set": {
-                "data.transcript": transcript,
+                "data.transcript": clean_transcript,
                 "data.durationSeconds": duration_seconds,
                 "data.tag": "website inbound agent lead",
                 "updatedAt": datetime.now(timezone.utc),

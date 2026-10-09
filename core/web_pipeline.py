@@ -27,6 +27,7 @@ from contextlib import AsyncExitStack
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from core.web_prompts import build_website_prompt
+from core.transliteration import devanagari_to_english
 from tools.website_tools import (
     send_website_email,
     save_website_lead,
@@ -40,6 +41,7 @@ MAX_CALL_SECONDS = 360  # hard cap per demo call to protect the Vertex bill
 WEB_TOOL_DECLARATIONS = [
     types.FunctionDeclaration(
         name="save_lead",
+        behavior="BLOCKING",
         description=(
             "Saves or updates the caller's details as a lead in DeployMate's CRM. "
             "Call this as soon as you learn ANY new detail (name, company, phone, requirement, interest). "
@@ -61,6 +63,7 @@ WEB_TOOL_DECLARATIONS = [
     ),
     types.FunctionDeclaration(
         name="send_details_email",
+        behavior="BLOCKING",
         description=(
             "Sends the DeployMate services brief email to the caller. CRITICAL: only call AFTER the caller "
             "has verbally confirmed the letter-by-letter spelling of the complete email address via the email capture protocol."
@@ -97,7 +100,9 @@ class WebVoicePipeline:
 
         self.exit_stack = AsyncExitStack()
         self.session = None
+        self.stt_session = None
         self.receiver_task = None
+        self.stt_task = None
         self.active = True
         self.started_at = time.monotonic()
         self.transcript_log = []
@@ -124,8 +129,10 @@ class WebVoicePipeline:
             realtime_input_config=types.RealtimeInputConfig(
                 automatic_activity_detection=types.AutomaticActivityDetection(
                     disabled=False,
+                    start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_LOW,
+                    end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_HIGH,
                     prefix_padding_ms=100,
-                    silence_duration_ms=600,
+                    silence_duration_ms=500,
                 )
             ),
             system_instruction=types.Content(
@@ -138,8 +145,23 @@ class WebVoicePipeline:
             self.session = await self.exit_stack.enter_async_context(
                 self.client.aio.live.connect(model=self.model_name, config=live_config)
             )
-            logger.info(f"[web:{self.session_id}] Gemini Live session connected")
+            logger.info(f"[web:{self.session_id}] Gemini Live session connected ({self.model_name})")
             self.receiver_task = asyncio.create_task(self._receive_loop())
+
+            # Connect gemini-3.5-transcribe-live in parallel for low-latency real-time interim STT
+            try:
+                stt_config = types.LiveConnectConfig(
+                    response_modalities=["TEXT"],
+                    input_audio_transcription=types.AudioTranscriptionConfig(),
+                )
+                self.stt_session = await self.exit_stack.enter_async_context(
+                    self.client.aio.live.connect(model="gemini-3.5-transcribe-live", config=stt_config)
+                )
+                self.stt_task = asyncio.create_task(self._stt_receive_loop())
+                logger.info(f"[web:{self.session_id}] gemini-3.5-transcribe-live connected for real-time interim STT")
+            except Exception as stt_err:
+                logger.warning(f"[web:{self.session_id}] gemini-3.5-transcribe-live unavailable ({stt_err}), using agent STT fallback")
+                self.stt_session = None
 
             # Make the agent speak first, like a receptionist picking up the phone.
             await self.session.send(
@@ -171,14 +193,23 @@ class WebVoicePipeline:
         """Browser sends 16 kHz mono PCM16 — forward straight to Gemini."""
         if not self.active or not self.session:
             return
+        blob = types.Blob(data=pcm_16k, mime_type="audio/pcm;rate=16000")
         try:
-            blob = types.Blob(data=pcm_16k, mime_type="audio/pcm;rate=16000")
             if hasattr(self.session, "send_realtime_input"):
                 await self.session.send_realtime_input(audio=blob)
             else:
                 await self.session.send(input=types.LiveClientRealtimeInput(audio=blob))
         except Exception as e:
             logger.error(f"[web:{self.session_id}] error sending audio to Gemini: {e}")
+
+        if self.stt_session and self.active:
+            try:
+                if hasattr(self.stt_session, "send_realtime_input"):
+                    await self.stt_session.send_realtime_input(audio=blob)
+                else:
+                    await self.stt_session.send(input=types.LiveClientRealtimeInput(audio=blob))
+            except Exception as e:
+                logger.debug(f"[web:{self.session_id}] error sending audio to STT session: {e}")
 
     async def handle_incoming_text(self, text: str):
         """Optional text channel (used by automated tests and as an accessibility fallback)."""
@@ -194,14 +225,44 @@ class WebVoicePipeline:
             logger.error(f"[web:{self.session_id}] error sending realtime text to Gemini: {e}")
 
     async def _flush_user_text(self):
-        if self._pending_user_text.strip():
-            self.transcript_log.append({"sender": "user", "text": self._pending_user_text.strip()})
+        clean = devanagari_to_english(self._pending_user_text).strip()
+        if clean:
+            self.transcript_log.append({"sender": "user", "text": clean})
             self._pending_user_text = ""
 
     async def _flush_agent_text(self):
-        if self._pending_agent_text.strip():
-            self.transcript_log.append({"sender": "assistant", "text": self._pending_agent_text.strip()})
+        clean = devanagari_to_english(self._pending_agent_text).strip()
+        if clean:
+            self.transcript_log.append({"sender": "assistant", "text": clean})
             self._pending_agent_text = ""
+
+    async def _stt_receive_loop(self):
+        """Streams real-time interim user speech hypotheses from gemini-3.5-transcribe-live."""
+        logger.info(f"[web:{self.session_id}] gemini-3.5-transcribe-live receiver started")
+        try:
+            while self.active and self.stt_session:
+                async for response in self.stt_session.receive():
+                    if not self.active:
+                        break
+                    try:
+                        sc = response.server_content
+                        if sc:
+                            if sc.interim_input_transcription and sc.interim_input_transcription.text:
+                                interim_text = devanagari_to_english(sc.interim_input_transcription.text).strip()
+                                if interim_text:
+                                    self._pending_user_text = interim_text
+                                    await self.send_event({
+                                        "type": "transcript", "role": "caller",
+                                        "text": interim_text, "final": False,
+                                    })
+                    except Exception as e:
+                        logger.error(f"[web:{self.session_id}] STT payload error: {e}")
+                await asyncio.sleep(0.05)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.warning(f"[web:{self.session_id}] STT receive loop ended with error: {e}")
+        logger.info(f"[web:{self.session_id}] STT receiver loop exited")
 
     async def _receive_loop(self):
         import base64
@@ -220,34 +281,37 @@ class WebVoicePipeline:
                                 continue
 
                             if sc.interim_input_transcription and sc.interim_input_transcription.text:
-                                interim_text = sc.interim_input_transcription.text
-                                self._pending_user_text = interim_text
-                                await self.send_event({
-                                    "type": "transcript", "role": "caller",
-                                    "text": interim_text, "final": False,
-                                })
+                                interim_text = devanagari_to_english(sc.interim_input_transcription.text).strip()
+                                if interim_text:
+                                    self._pending_user_text = interim_text
+                                    await self.send_event({
+                                        "type": "transcript", "role": "caller",
+                                        "text": interim_text, "final": False,
+                                    })
 
                             if sc.input_transcription and sc.input_transcription.text:
-                                final_user_text = sc.input_transcription.text
-                                self._pending_user_text = final_user_text
-                                await self.send_event({
-                                    "type": "transcript", "role": "caller",
-                                    "text": final_user_text, "final": True,
-                                })
-                                await self._flush_user_text()
+                                final_user_text = devanagari_to_english(sc.input_transcription.text).strip()
+                                if final_user_text:
+                                    self._pending_user_text = final_user_text
+                                    await self.send_event({
+                                        "type": "transcript", "role": "caller",
+                                        "text": final_user_text, "final": True,
+                                    })
+                                    await self._flush_user_text()
 
                             if sc.output_transcription and sc.output_transcription.text:
                                 # Agent started answering → the caller's turn is over.
                                 if self._pending_user_text.strip():
                                     await self.send_event({
                                         "type": "transcript", "role": "caller",
-                                        "text": self._pending_user_text, "final": True,
+                                        "text": devanagari_to_english(self._pending_user_text).strip(), "final": True,
                                     })
                                     await self._flush_user_text()
-                                self._pending_agent_text += sc.output_transcription.text
+                                clean_agent_piece = devanagari_to_english(sc.output_transcription.text)
+                                self._pending_agent_text += clean_agent_piece
                                 await self.send_event({
                                     "type": "transcript", "role": "agent",
-                                    "text": self._pending_agent_text, "final": False,
+                                    "text": self._pending_agent_text.strip(), "final": False,
                                 })
 
                             if sc.model_turn and sc.model_turn.parts:
@@ -262,9 +326,8 @@ class WebVoicePipeline:
                                 if self._pending_agent_text.strip():
                                     await self.send_event({
                                         "type": "transcript", "role": "agent",
-                                        "text": self._pending_agent_text, "final": True,
+                                        "text": self._pending_agent_text.strip(), "final": True,
                                     })
-                                Exception_flag = False
                                 await self._flush_agent_text()
                                 await self.send_event({"type": "turn_complete"})
 
@@ -288,6 +351,7 @@ class WebVoicePipeline:
         function_responses = []
         for fc in tool_call.function_calls:
             fn_name = fc.name
+            call_id = getattr(fc, "id", None)
             fn_args = dict(fc.args) if fc.args else {}
             self.transcript_log.append({"sender": "system", "text": f"Tool call: {fn_name}({fn_args})"})
 
@@ -309,7 +373,7 @@ class WebVoicePipeline:
             self.tool_call_counts[fn_name] = self.tool_call_counts.get(fn_name, 0) + 1
             if self.tool_call_counts[fn_name] > limit and not is_new_email:
                 result = f"Tool '{fn_name}' call limit reached. Tell the caller the team will follow up manually."
-                function_responses.append(types.FunctionResponse(name=fn_name, response={"result": result}))
+                function_responses.append(types.FunctionResponse(id=call_id, name=fn_name, response={"result": result}))
                 continue
 
             if to_email:
@@ -349,7 +413,7 @@ class WebVoicePipeline:
                 result = f"Unknown tool: {fn_name}"
 
             self.transcript_log.append({"sender": "system", "text": f"Tool result: {result}"})
-            function_responses.append(types.FunctionResponse(name=fn_name, response={"result": result}))
+            function_responses.append(types.FunctionResponse(id=call_id, name=fn_name, response={"result": result}))
 
         try:
             if hasattr(self.session, "send_tool_response"):
@@ -396,6 +460,12 @@ class WebVoicePipeline:
             return
         logger.info(f"[web:{self.session_id}] closing web pipeline")
         self.active = False
+        if self.stt_task:
+            self.stt_task.cancel()
+            try:
+                await self.stt_task
+            except asyncio.CancelledError:
+                pass
         if self.receiver_task:
             self.receiver_task.cancel()
             try:
@@ -411,6 +481,16 @@ class WebVoicePipeline:
         # never called save_lead, so no website call is ever lost).
         await self._flush_user_text()
         await self._flush_agent_text()
+
+        # Guarantee 100% English Latin script in transcript log before database storage
+        clean_log = []
+        for entry in self.transcript_log:
+            c_entry = dict(entry)
+            if "text" in c_entry and isinstance(c_entry["text"], str):
+                c_entry["text"] = devanagari_to_english(c_entry["text"]).strip()
+            clean_log.append(c_entry)
+        self.transcript_log = clean_log
+
         transcript = [t for t in self.transcript_log if t.get("sender") in ("user", "assistant")]
         duration = int(time.monotonic() - self.started_at)
         if transcript:

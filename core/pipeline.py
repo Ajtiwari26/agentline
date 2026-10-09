@@ -12,6 +12,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from core.prompts import build_system_prompt, load_kb
+from core.transliteration import devanagari_to_english
 from tools.email_tool import send_template_email
 from tools.callback_tool import schedule_manager_callback
 from tools.lead_tool import update_lead_status
@@ -52,6 +53,7 @@ TOOL_HANDLERS = {
 TOOL_DECLARATIONS = [
     types.FunctionDeclaration(
         name="send_email",
+        behavior="BLOCKING",
         description="Sends a template-based email to the user. CRITICAL: You must NEVER call this tool until the user has explicitly confirmed their email address is correct via the email confirmation protocol. If you just heard a new email, speak it back first and wait for the user to say 'yes' before calling this tool.",
         parameters=types.Schema(
             type="OBJECT",
@@ -64,6 +66,7 @@ TOOL_DECLARATIONS = [
     ),
     types.FunctionDeclaration(
         name="schedule_callback",
+        behavior="BLOCKING",
         description="Schedules a callback for the human manager to call the lead back later. Use this if the lead asks for a call tomorrow, or next morning, or has query about pricing/payment.",
         parameters=types.Schema(
             type="OBJECT",
@@ -80,6 +83,7 @@ TOOL_DECLARATIONS = [
     ),
     types.FunctionDeclaration(
         name="log_lead_interest",
+        behavior="BLOCKING",
         description="Updates the lead's status (hot, warm, cold) and records conversation notes or objections in the database. Call this whenever you understand the user's name, interest level, or specific requirements.",
         parameters=types.Schema(
             type="OBJECT",
@@ -93,6 +97,7 @@ TOOL_DECLARATIONS = [
     ),
     types.FunctionDeclaration(
         name="query_product_info",
+        behavior="BLOCKING",
         description="Queries the course catalog, pricing details, GPU requirements, or FAQ for relevant answers. Use this to get accurate details before answering fees or hardware questions.",
         parameters=types.Schema(
             type="OBJECT",
@@ -369,8 +374,9 @@ class VoicePipeline:
                             if hasattr(sc, "user_turn") and sc.user_turn and sc.user_turn.parts:
                                 for part in sc.user_turn.parts:
                                     if part.text:
-                                        logger.info(f"User spoken transcript: '{part.text}'")
-                                        self.transcript_log.append({"sender": "user", "text": part.text})
+                                        clean_text = devanagari_to_english(part.text).strip()
+                                        logger.info(f"User spoken transcript: '{clean_text}'")
+                                        self.transcript_log.append({"sender": "user", "text": clean_text})
                                         
                             # Handle Gemini interruption
                             if sc.interrupted:
@@ -404,8 +410,9 @@ class VoicePipeline:
                                                 audio_chunk_count += 1
                                             
                                     if part.text:
-                                        logger.info(f"Gemini Live text response: '{part.text}'")
-                                        self.transcript_log.append({"sender": "assistant", "text": part.text})
+                                        clean_text = devanagari_to_english(part.text).strip()
+                                        logger.info(f"Gemini Live text response: '{clean_text}'")
+                                        self.transcript_log.append({"sender": "assistant", "text": clean_text})
                                 if audio_chunk_count > 0:
                                     dest = "callback" if self.send_audio_callback else "buffer"
                                     logger.info(f"🔊 Streamed {audio_chunk_count} audio chunks to {dest}")
@@ -444,6 +451,7 @@ class VoicePipeline:
         
         for fc in tool_call.function_calls:
             fn_name = fc.name
+            call_id = getattr(fc, "id", None)
             fn_args = dict(fc.args) if fc.args else {}
             fn_args["_phone"] = self.phone  # Inject phone context
             
@@ -460,6 +468,7 @@ class VoicePipeline:
                 logger.warning(f"Blocked tool call '{fn_name}' — retry limit exceeded (count: {self.tool_call_counts[fn_name]})")
                 self.transcript_log.append({"sender": "system", "text": f"Tool response blocked: {result}"})
                 function_responses.append(types.FunctionResponse(
+                    id=call_id,
                     name=fn_name,
                     response={"result": result}
                 ))
@@ -506,17 +515,21 @@ class VoicePipeline:
             self.transcript_log.append({"sender": "system", "text": f"Tool execution result: {result}"})
             
             function_responses.append(types.FunctionResponse(
+                id=call_id,
                 name=fn_name,
                 response={"result": result}
             ))
         
         # Send tool results back to Gemini Live session
         try:
-            await self.session.send(
-                input=types.LiveClientToolResponse(
-                    function_responses=function_responses
+            if hasattr(self.session, "send_tool_response"):
+                await self.session.send_tool_response(function_responses=function_responses)
+            else:
+                await self.session.send(
+                    input=types.LiveClientToolResponse(
+                        function_responses=function_responses
+                    )
                 )
-            )
             logger.info("Tool responses sent back to Gemini Live session.")
         except Exception as e:
             logger.error(f"Error sending tool response to Gemini Live: {e}")
@@ -735,10 +748,18 @@ TRANSCRIPT:
             except Exception as e:
                 logger.error(f"Error in background post call processing: {e}")
 
+        # Clean transcript log so recorded turns in database contain zero Devanagari
+        clean_log = []
+        for entry in self.transcript_log:
+            c_entry = dict(entry)
+            if "text" in c_entry and isinstance(c_entry["text"], str):
+                c_entry["text"] = devanagari_to_english(c_entry["text"]).strip()
+            clean_log.append(c_entry)
+
         # Fire and forget the background task
         asyncio.create_task(_background_post_call_processing(
             call_sid=self.call_sid,
             phone=self.phone,
-            transcript=list(self.transcript_log) if self.transcript_log else [],
+            transcript=clean_log,
             direction=self.direction
         ))
