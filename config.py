@@ -5,13 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # LLM Config
-# LLM Config
-_env_key = os.getenv("GEMINI_API_KEY", "")
-# Ensure we use a valid AI Studio API key starting with AIzaSy (protects against stale/OAuth Stitch tokens on cloud)
-if not _env_key or not _env_key.startswith("AIzaSy"):
-    GEMINI_API_KEY = "AIzaSyCduhHSsRLYLwxUp9JXb-JlZslmvlz1YjQ"
-else:
-    GEMINI_API_KEY = _env_key
+_env_key = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_API_KEY = _env_key
 
 COMPANY = os.getenv("COMPANY", "deploymate").lower()
 GEMINI_LIVE_VOICE = os.getenv("GEMINI_LIVE_VOICE", "Aoede")

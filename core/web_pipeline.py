@@ -93,10 +93,7 @@ class WebVoicePipeline:
         self.session_id = uuid.uuid4().hex[:16]
         self.system_prompt = build_website_prompt(getattr(config, "AGENT_NAME", "Kavya"))
         self.client, self.is_vertex = config.get_gemini_client()
-        self.model_name = (
-            "gemini-live-2.5-flash-native-audio" if self.is_vertex
-            else "gemini-2.5-flash-native-audio-latest"
-        )
+        self.model_name = getattr(config, "GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
 
         self.exit_stack = AsyncExitStack()
         self.session = None
