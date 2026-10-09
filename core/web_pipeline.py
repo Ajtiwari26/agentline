@@ -63,7 +63,7 @@ WEB_TOOL_DECLARATIONS = [
         name="send_details_email",
         description=(
             "Sends the DeployMate services brief email to the caller. CRITICAL: only call AFTER the caller "
-            "has verbally confirmed the complete email address via the email capture protocol."
+            "has verbally confirmed the letter-by-letter spelling of the complete email address via the email capture protocol."
         ),
         parameters=types.Schema(
             type="OBJECT",
@@ -291,6 +291,17 @@ class WebVoicePipeline:
             self.transcript_log.append({"sender": "system", "text": f"Tool call: {fn_name}({fn_args})"})
 
             limit = 8 if fn_name in ("save_lead", "send_details_email") else 3
+            if fn_name == "send_details_email":
+                raw_email = str(fn_args.get("to_email", "")).strip().lower()
+                cleaned_email = (
+                    raw_email.replace(" at the rate ", "@")
+                    .replace(" at ", "@")
+                    .replace(" dot ", ".")
+                    .replace(" ", "")
+                    .rstrip(".")
+                )
+                fn_args["to_email"] = cleaned_email
+
             to_email = fn_args.get("to_email", "").strip().lower() if fn_name == "send_details_email" else None
             is_new_email = bool(to_email and (to_email not in self.sent_emails))
 
@@ -303,7 +314,12 @@ class WebVoicePipeline:
             if to_email:
                 self.sent_emails.add(to_email)
 
-            await self.send_event({"type": "tool", "name": fn_name, "status": "start"})
+            await self.send_event({
+                "type": "tool",
+                "name": fn_name,
+                "status": "start",
+                "email": to_email,
+            })
 
             if fn_name == "save_lead":
                 self.lead_saved = True
@@ -348,7 +364,12 @@ class WebVoicePipeline:
         try:
             res = await asyncio.to_thread(handler, **args)
             logger.info(f"[web:{self.session_id}] background tool {fn_name} done: {res}")
-            await self.send_event({"type": "tool", "name": fn_name, "status": "done"})
+            await self.send_event({
+                "type": "tool",
+                "name": fn_name,
+                "status": "done",
+                "email": args.get("to_email") if fn_name == "send_details_email" else None,
+            })
         except Exception as e:
             logger.error(f"[web:{self.session_id}] background tool {fn_name} failed: {e}")
             await self.send_event({"type": "tool", "name": fn_name, "status": "error"})
