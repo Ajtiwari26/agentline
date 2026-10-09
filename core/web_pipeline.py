@@ -102,6 +102,7 @@ class WebVoicePipeline:
         self.started_at = time.monotonic()
         self.transcript_log = []
         self.tool_call_counts = {}
+        self.sent_emails = set()
         self.lead_saved = False
         # Partial transcription accumulators (flushed on turn boundaries)
         self._pending_user_text = ""
@@ -217,12 +218,22 @@ class WebVoicePipeline:
                                 await self.send_event({"type": "interrupted"})
                                 continue
 
-                            if sc.input_transcription and sc.input_transcription.text:
-                                self._pending_user_text += sc.input_transcription.text
+                            if sc.interim_input_transcription and sc.interim_input_transcription.text:
+                                interim_text = sc.interim_input_transcription.text
+                                self._pending_user_text = interim_text
                                 await self.send_event({
                                     "type": "transcript", "role": "caller",
-                                    "text": self._pending_user_text, "final": False,
+                                    "text": interim_text, "final": False,
                                 })
+
+                            if sc.input_transcription and sc.input_transcription.text:
+                                final_user_text = sc.input_transcription.text
+                                self._pending_user_text = final_user_text
+                                await self.send_event({
+                                    "type": "transcript", "role": "caller",
+                                    "text": final_user_text, "final": True,
+                                })
+                                await self._flush_user_text()
 
                             if sc.output_transcription and sc.output_transcription.text:
                                 # Agent started answering → the caller's turn is over.
@@ -252,6 +263,7 @@ class WebVoicePipeline:
                                         "type": "transcript", "role": "agent",
                                         "text": self._pending_agent_text, "final": True,
                                     })
+                                Exception_flag = False
                                 await self._flush_agent_text()
                                 await self.send_event({"type": "turn_complete"})
 
@@ -278,12 +290,18 @@ class WebVoicePipeline:
             fn_args = dict(fc.args) if fc.args else {}
             self.transcript_log.append({"sender": "system", "text": f"Tool call: {fn_name}({fn_args})"})
 
-            limit = 6 if fn_name == "save_lead" else 2
+            limit = 8 if fn_name in ("save_lead", "send_details_email") else 3
+            to_email = fn_args.get("to_email", "").strip().lower() if fn_name == "send_details_email" else None
+            is_new_email = bool(to_email and (to_email not in self.sent_emails))
+
             self.tool_call_counts[fn_name] = self.tool_call_counts.get(fn_name, 0) + 1
-            if self.tool_call_counts[fn_name] > limit:
+            if self.tool_call_counts[fn_name] > limit and not is_new_email:
                 result = f"Tool '{fn_name}' call limit reached. Tell the caller the team will follow up manually."
                 function_responses.append(types.FunctionResponse(name=fn_name, response={"result": result}))
                 continue
+
+            if to_email:
+                self.sent_emails.add(to_email)
 
             await self.send_event({"type": "tool", "name": fn_name, "status": "start"})
 
@@ -317,9 +335,12 @@ class WebVoicePipeline:
             function_responses.append(types.FunctionResponse(name=fn_name, response={"result": result}))
 
         try:
-            await self.session.send(
-                input=types.LiveClientToolResponse(function_responses=function_responses)
-            )
+            if hasattr(self.session, "send_tool_response"):
+                await self.session.send_tool_response(function_responses=function_responses)
+            else:
+                await self.session.send(
+                    input=types.LiveClientToolResponse(function_responses=function_responses)
+                )
         except Exception as e:
             logger.error(f"[web:{self.session_id}] error sending tool response: {e}")
 
