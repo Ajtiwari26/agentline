@@ -224,15 +224,41 @@ class WebVoicePipeline:
         except Exception as e:
             logger.error(f"[web:{self.session_id}] error sending realtime text to Gemini: {e}")
 
+    def _commit_user_text(self, text: str):
+        clean = devanagari_to_english(text).strip()
+        if not clean:
+            return
+        if self.transcript_log and self.transcript_log[-1].get("sender") == "user":
+            last_text = self.transcript_log[-1].get("text", "")
+            if clean == last_text:
+                return
+            if clean.startswith(last_text) or last_text in clean:
+                self.transcript_log[-1]["text"] = clean
+                return
+            if clean in last_text:
+                return
+            self.transcript_log[-1]["text"] = f"{last_text} {clean}".strip()
+        else:
+            self.transcript_log.append({"sender": "user", "text": clean})
+
     async def _flush_user_text(self):
         clean = devanagari_to_english(self._pending_user_text).strip()
         if clean:
-            self.transcript_log.append({"sender": "user", "text": clean})
+            self._commit_user_text(clean)
             self._pending_user_text = ""
 
     async def _flush_agent_text(self):
         clean = devanagari_to_english(self._pending_agent_text).strip()
         if clean:
+            if self.transcript_log and self.transcript_log[-1].get("sender") == "assistant":
+                last_text = self.transcript_log[-1].get("text", "")
+                if clean == last_text:
+                    self._pending_agent_text = ""
+                    return
+                if clean.startswith(last_text) or last_text in clean:
+                    self.transcript_log[-1]["text"] = clean
+                    self._pending_agent_text = ""
+                    return
             self.transcript_log.append({"sender": "assistant", "text": clean})
             self._pending_agent_text = ""
 
@@ -290,21 +316,21 @@ class WebVoicePipeline:
                                     })
 
                             if sc.input_transcription and sc.input_transcription.text:
-                                final_user_text = devanagari_to_english(sc.input_transcription.text).strip()
-                                if final_user_text:
-                                    self._pending_user_text = final_user_text
+                                user_text = devanagari_to_english(sc.input_transcription.text).strip()
+                                if user_text:
+                                    self._pending_user_text = user_text
                                     await self.send_event({
                                         "type": "transcript", "role": "caller",
-                                        "text": final_user_text, "final": True,
+                                        "text": user_text, "final": False,
                                     })
-                                    await self._flush_user_text()
 
                             if sc.output_transcription and sc.output_transcription.text:
                                 # Agent started answering → the caller's turn is over.
                                 if self._pending_user_text.strip():
+                                    final_caller = devanagari_to_english(self._pending_user_text).strip()
                                     await self.send_event({
                                         "type": "transcript", "role": "caller",
-                                        "text": devanagari_to_english(self._pending_user_text).strip(), "final": True,
+                                        "text": final_caller, "final": True,
                                     })
                                     await self._flush_user_text()
                                 clean_agent_piece = devanagari_to_english(sc.output_transcription.text)
@@ -332,6 +358,13 @@ class WebVoicePipeline:
                                 await self.send_event({"type": "turn_complete"})
 
                         if response.tool_call:
+                            if self._pending_user_text.strip():
+                                final_caller = devanagari_to_english(self._pending_user_text).strip()
+                                await self.send_event({
+                                    "type": "transcript", "role": "caller",
+                                    "text": final_caller, "final": True,
+                                })
+                                await self._flush_user_text()
                             await self._handle_tool_calls(response.tool_call)
 
                     except Exception as e:
